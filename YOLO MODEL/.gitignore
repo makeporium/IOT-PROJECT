@@ -1,0 +1,33 @@
+# Python virtual environment
+venv/
+.venv/
+
+# YOLO generated outputs
+runs/
+
+# YOLO model weights
+*.pt
+*.onnx
+*.engine
+
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# VS Code
+.vscode/
+
+# Environment / secrets
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
