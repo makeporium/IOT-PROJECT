@@ -86,10 +86,12 @@ class SafetyStateMachine:
         decision_rules: Optional[CollisionDecisionRules] = None,
         lock_hold_duration_s: float = 1.0,
         sensor_timeout_s: float = 0.5,
+        enable_sensor_timeout: bool = False,
     ):
         self.rules = decision_rules or CollisionDecisionRules()
         self.lock_hold_duration_s = lock_hold_duration_s
         self.sensor_timeout_s = sensor_timeout_s
+        self.enable_sensor_timeout = enable_sensor_timeout
 
         # Live State
         self.state: SafetyState = SafetyState.SAFE
@@ -195,12 +197,13 @@ class SafetyStateMachine:
         if objects is not None:
             self.update(objects, frame_timestamp_s=time.time())
 
-        # Check sensor timeout (fail-safe trigger)
-        time_since_last_sensor = time.perf_counter() - self.last_sensor_update_time
-        if time_since_last_sensor > self.sensor_timeout_s:
-            self.state = SafetyState.FAIL_SAFE
-            self.actuator_command = ActuatorCommand.FAIL_SAFE_LOCK
-            self.servo_angle_deg = 0
+        # Check sensor timeout (fail-safe trigger) only if watchdog is explicitly enabled
+        if self.enable_sensor_timeout:
+            time_since_last_sensor = time.perf_counter() - self.last_sensor_update_time
+            if time_since_last_sensor > self.sensor_timeout_s:
+                self.state = SafetyState.FAIL_SAFE
+                self.actuator_command = ActuatorCommand.FAIL_SAFE_LOCK
+                self.servo_angle_deg = 0
 
         # Formulate Door Response
         if self.state == SafetyState.CRITICAL:
