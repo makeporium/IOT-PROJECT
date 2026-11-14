@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DOORSAFE — AI Vehicle Door Safety Perception</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-subtle: #E2E8F0;
+      --border-focus: #3B82F6;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #94A3B8;
+      --accent-blue: #2563EB;
+      --accent-blue-light: #EFF6FF;
+      --status-safe: #10B981;
+      --status-warning: #F59E0B;
+      --status-critical: #EF4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background-color: #FFFFFF;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+
+    .brand-logo {
+      background: var(--accent-blue);
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); }
+    .brand-subtitle { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .nav-status { display: flex; align-items: center; gap: 1.25rem; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      background-color: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--status-safe);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+    }
+
+    main {
+      max-width: 1440px;
+      margin: 1.5rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1.5rem;
+    }
+
+    .sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-primary);
+    }
+
+    .form-group { margin-bottom: 0.9rem; }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.35rem;
+    }
+
+    .form-select, .form-input {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: #FFFFFF;
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .range-group { display: flex; align-items: center; gap: 0.75rem; }
+    .range-slider { flex: 1; accent-color: var(--accent-blue); }
+    .range-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      min-width: 55px;
+      text-align: right;
+    }
+
+    .upload-dropzone {
+      border: 2px dashed #CBD5E1;
+      border-radius: 8px;
+      padding: 1.1rem;
+      text-align: center;
+      cursor: pointer;
+      background: #F8FAFC;
+    }
+
+    .upload-dropzone:hover { border-color: var(--accent-blue); background: var(--accent-blue-light); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+
+    .btn-primary { background-color: var(--accent-blue); color: white; }
+    .btn-primary:hover:not(:disabled) { background-color: #1D4ED8; }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-secondary {
+      background-color: #F1F5F9;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover { background-color: #E2E8F0; }
+
+    .content-area { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .video-viewport-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .viewport-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .video-wrapper {
+      position: relative;
+      background: #0F172A;
+      width: 100%;
+      min-height: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video { width: 100%; height: auto; max-height: 560px; display: block; }
+    .placeholder-msg { color: #94A3B8; text-align: center; font-size: 0.9rem; padding: 2rem; }
+
+    .progress-container {
+      padding: 0.85rem 1.25rem;
+      background: #F8FAFC;
+      border-top: 1px solid var(--border-subtle);
+      display: none;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: #E2E8F0;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .progress-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: width 0.2s ease; }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-primary);
+      margin-top: 0.2rem;
+    }
+
+    .metric-sub { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; }
+
+    .targets-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.25rem;
+      overflow-x: auto;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+    th {
+      padding: 0.65rem 0.85rem;
+      background: #F8FAFC;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .class-pill {
+      font-family: 'Inter', sans-serif;
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .class-bicycle { background: #ECFEFF; color: #0891B2; border: 1px solid #A5F3FC; }
+    .class-motorcycle { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+    .class-person { background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; }
+    .class-car { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+    .class-bus, .class-truck { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+
+    .urgency-badge {
+      font-family: 'Inter', sans-serif;
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .urgency-critical { background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; }
+    .urgency-warning { background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D; }
+    .urgency-safe { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+
+    .json-box {
+      background: #0F172A;
+      color: #E2E8F0;
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">DS</div>
+      <div>
+        <div class="brand-title">DOORSAFE Perception & Kinematics Suite</div>
+        <div class="brand-subtitle">AI & IoT Automotive Safety System — Phase 2 Metric Geometry & TTC</div>
+      </div>
+    </div>
+    <div class="nav-status">
+      <span class="status-badge" id="systemStatusBadge">
+        <span class="status-dot"></span>
+        <span id="systemStatusText">Connecting...</span>
+      </span>
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+        Model: <strong id="modelNameText" style="color: var(--text-secondary);">yolo26n.pt</strong> | Device: <strong id="deviceText" style="color: var(--text-secondary);">CPU</strong>
+      </span>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main>
+    <!-- Left Configuration Sidebar -->
+    <div class="sidebar">
+      
+      <!-- Video Input Card -->
+      <div class="card">
+        <div class="card-title"><span>Source Video Selection</span></div>
+
+        <div class="form-group" id="recentRunsGroup" style="display: none;">
+          <label class="form-label">Completed Analysis Runs</label>
+          <select id="recentRunsSelect" class="form-select"></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Pre-loaded Benchmark Videos</label>
+          <select id="sampleVideoSelect" class="form-select">
+            <option value="">Loading sample videos...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Or Upload Real Traffic Video</label>
+          <div id="dropzone" class="upload-dropzone">
+            <div style="font-size: 1.5rem;">📁</div>
+            <div style="font-size: 0.8rem; font-weight: 500;">Click or drag MP4 video here</div>
+            <input type="file" id="fileInput" accept="video/mp4,video/avi,video/quicktime" style="display: none;" />
+          </div>
+          <div id="uploadFileInfo" style="font-size: 0.75rem; color: var(--accent-blue); margin-top: 0.4rem; display: none;"></div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label" style="display: flex; justify-content: space-between;">
+            <span>YOLO Confidence Threshold</span>
+            <span id="confValue" class="range-val">0.35</span>
+          </div>
+          <input type="range" id="confSlider" class="range-slider" min="0.10" max="0.90" step="0.05" value="0.35" />
+        </div>
+
+        <button id="btnProcess" class="btn btn-primary">
+          ▶ Run Perception, Kinematics & TTC
+        </button>
+      </div>
+
+      <!-- Camera Calibration Card (Phase 2) -->
+      <div class="card">
+        <div class="card-title">
+          <span>Camera Geometry Calibration</span>
+          <span style="font-size: 0.72rem; color: var(--accent-blue); font-weight: 700;">PHASE 2</span>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Camera Height ($h$)</span>
+            <span id="camHeightVal" class="range-val">1.15 m</span>
+          </div>
+          <input type="range" id="camHeightSlider" class="range-slider" min="0.80" max="2.00" step="0.05" value="1.15" />
+        </div>
+
+        <div class="form-group">
+          <div class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Downward Pitch ($\theta$)</span>
+            <span id="camPitchVal" class="range-val">8.5°</span>
+          </div>
+          <input type="range" id="camPitchSlider" class="range-slider" min="2.0" max="25.0" step="0.5" value="8.5" />
+        </div>
+
+        <div class="form-group">
+          <div class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Horizontal FOV</span>
+            <span id="camFovVal" class="range-val">72.0°</span>
+          </div>
+          <input type="range" id="camFovSlider" class="range-slider" min="50.0" max="100.0" step="1.0" value="72.0" />
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">
+          Ground-plane geometry maps footpoints $(u, v)$ to real-world meters $(X, Y)$ and calculates velocity vectors.
+        </div>
+      </div>
+
+      <!-- Export Card -->
+      <div class="card" id="exportCard" style="display: none;">
+        <div class="card-title">Export Results</div>
+        <a id="btnDownloadVideo" href="#" class="btn btn-secondary" style="text-decoration: none;" download>
+          📥 Download Annotated MP4
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Right Video & Telemetry Content Area -->
+    <div class="content-area">
+
+      <!-- Video Display Card -->
+      <div class="video-viewport-card">
+        <div class="viewport-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.95rem;">
+            <span>Video Perception Viewport</span>
+            <span id="jobStatusBadge" style="font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 4px; background: #F1F5F9; color: var(--text-secondary);">IDLE</span>
+          </div>
+          <div id="videoMetaText" style="font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">
+            No video loaded
+          </div>
+        </div>
+
+        <div class="video-wrapper">
+          <video id="mainVideoPlayer" controls playsinline muted preload="auto" style="display: none;"></video>
+          <div id="videoPlaceholder" class="placeholder-msg">
+            Select a benchmark video or upload footage and click <strong>"Run Perception, Kinematics & TTC"</strong>.
+          </div>
+        </div>
+
+        <div id="progressContainer" class="progress-container">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.35rem;">
+            <span id="progressStepText">Processing frames...</span>
+            <span id="progressPercentText">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry Metric Cards -->
+      <div class="telemetry-grid">
+        <div class="metric-card">
+          <div class="metric-label">Collision Hazards</div>
+          <div class="metric-value" id="hazardMetric" style="color: var(--status-safe);">0</div>
+          <div class="metric-sub" id="hazardSub">Door corridor conflicts</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Min Time-To-Collision</div>
+          <div class="metric-value" id="ttcMetric">--</div>
+          <div class="metric-sub">Seconds to door impact</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Inference Latency</div>
+          <div class="metric-value" id="latencyMetric">--</div>
+          <div class="metric-sub">Milliseconds / frame</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Processing Speed</div>
+          <div class="metric-value" id="fpsMetric">--</div>
+          <div class="metric-sub">Frames per second (FPS)</div>
+        </div>
+      </div>
+
+      <!-- Top-Down Bird's-Eye-View (BEV) Radar Map (Phase 2) -->
+      <div class="card">
+        <div class="card-title">
+          <span>Top-Down Bird's-Eye-View (BEV) Spatial Radar & Door Danger Corridor</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">Metric Coordinates (X=Lateral, Y=Longitudinal)</span>
+        </div>
+        <div style="background: #0F172A; border-radius: 8px; padding: 0.75rem; display: flex; justify-content: center;">
+          <canvas id="bevCanvas" width="760" height="260" style="max-width: 100%; border-radius: 6px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Phase 2 Observed Targets Table -->
+      <div class="targets-card">
+        <div class="card-title">
+          <span>Observed Tracked Targets & Metric Kinematics</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">Phase 2 Multi-Object Kinematic State</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Class</th>
+              <th>Distance</th>
+              <th>Ground (X, Y)</th>
+              <th>Velocity / Speed</th>
+              <th>TTC Horizon</th>
+              <th>Hazard Urgency</th>
+              <th>Uncertainty</th>
+            </tr>
+          </thead>
+          <tbody id="targetsTableBody">
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                No detection telemetry yet. Run analysis to view tracked objects.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Raw JSON Telemetry Drawer -->
+      <div class="card">
+        <div class="card-title">
+          <span>Structured Frame Telemetry JSON</span>
+          <button id="btnCopyJson" class="btn btn-secondary" style="width: auto; padding: 0.25rem 0.65rem; font-size: 0.75rem;">Copy JSON</button>
+        </div>
+        <div id="jsonViewer" class="json-box">// JSON telemetry payload will populate after video processing finishes.</div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // State
+    let selectedMode = 'SAMPLE';
+    let uploadedFilename = null;
+    let currentJobId = null;
+    let pollInterval = null;
+    let fullTelemetryData = null;
+
+    // Elements
+    const sampleSelect = document.getElementById('sampleVideoSelect');
+    const recentSelect = document.getElementById('recentRunsSelect');
+    const recentGroup = document.getElementById('recentRunsGroup');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadFileInfo = document.getElementById('uploadFileInfo');
+    const confSlider = document.getElementById('confSlider');
+    const confValue = document.getElementById('confValue');
+    const camHeightSlider = document.getElementById('camHeightSlider');
+    const camHeightVal = document.getElementById('camHeightVal');
+    const camPitchSlider = document.getElementById('camPitchSlider');
+    const camPitchVal = document.getElementById('camPitchVal');
+    const camFovSlider = document.getElementById('camFovSlider');
+    const camFovVal = document.getElementById('camFovVal');
+    const btnProcess = document.getElementById('btnProcess');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const progressPercentText = document.getElementById('progressPercentText');
+    const progressStepText = document.getElementById('progressStepText');
+    const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const jobStatusBadge = document.getElementById('jobStatusBadge');
+    const videoMetaText = document.getElementById('videoMetaText');
+    const fpsMetric = document.getElementById('fpsMetric');
+    const latencyMetric = document.getElementById('latencyMetric');
+    const hazardMetric = document.getElementById('hazardMetric');
+    const ttcMetric = document.getElementById('ttcMetric');
+    const targetsTableBody = document.getElementById('targetsTableBody');
+    const jsonViewer = document.getElementById('jsonViewer');
+    const exportCard = document.getElementById('exportCard');
+    const btnDownloadVideo = document.getElementById('btnDownloadVideo');
+    const btnCopyJson = document.getElementById('btnCopyJson');
+    const systemStatusText = document.getElementById('systemStatusText');
+    const modelNameText = document.getElementById('modelNameText');
+    const deviceText = document.getElementById('deviceText');
+    const bevCanvas = document.getElementById('bevCanvas');
+    const bevCtx = bevCanvas.getContext('2d');
+
+    // Calibration sliders
+    camHeightSlider.addEventListener('input', (e) => camHeightVal.innerText = `${Number(e.target.value).toFixed(2)} m`);
+    camPitchSlider.addEventListener('input', (e) => camPitchVal.innerText = `${Number(e.target.value).toFixed(1)}°`);
+    camFovSlider.addEventListener('input', (e) => camFovVal.innerText = `${Number(e.target.value).toFixed(1)}°`);
+    confSlider.addEventListener('input', (e) => confValue.innerText = Number(e.target.value).toFixed(2));
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        if (data.status === 'ONLINE') {
+          systemStatusText.innerText = 'ONLINE (Backend Ready)';
+          modelNameText.innerText = data.model_name;
+          deviceText.innerText = data.device;
+        }
+      } catch (err) {
+        systemStatusText.innerText = 'OFFLINE (Connecting...)';
+      }
+    }
+
+    async function loadSamples() {
+      try {
+        const res = await fetch('/api/video/samples');
+        const samples = await res.json();
+        sampleSelect.innerHTML = '';
+        if (samples.length === 0) return;
+        samples.forEach((s, idx) => {
+          const opt = document.createElement('option');
+          opt.value = s.filename;
+          opt.innerText = `${s.filename} (${s.filesize_mb} MB)`;
+          if (idx === 0) opt.selected = true;
+          sampleSelect.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Failed to load sample videos:', err);
+      }
+    }
+
+    sampleSelect.addEventListener('change', () => {
+      selectedMode = 'SAMPLE';
+      uploadedFilename = null;
+      uploadFileInfo.style.display = 'none';
+      mainVideoPlayer.muted = true;
+      mainVideoPlayer.src = `/samples/${sampleSelect.value}`;
+      mainVideoPlayer.onerror = () => {
+        if (!mainVideoPlayer.src.includes('/api/video/samples/')) {
+          mainVideoPlayer.src = `/api/video/samples/${sampleSelect.value}/stream`;
+          mainVideoPlayer.load();
+        }
+      };
+      videoPlaceholder.style.display = 'none';
+      mainVideoPlayer.style.display = 'block';
+      mainVideoPlayer.load();
+      videoMetaText.innerHTML = `Raw Source: ${sampleSelect.value} &nbsp;|&nbsp; <a href="/samples/${sampleSelect.value}" target="_blank" style="color: var(--accent-blue);">Open Video Tab ↗</a>`;
+    });
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      if (e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      uploadFileInfo.style.display = 'block';
+      uploadFileInfo.innerText = `Uploading ${file.name}...`;
+
+      try {
+        const res = await fetch('/api/video/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          selectedMode = 'UPLOAD';
+          uploadedFilename = data.filename;
+          uploadFileInfo.innerText = `Uploaded: ${data.original_name}`;
+          sampleSelect.selectedIndex = -1;
+          mainVideoPlayer.src = URL.createObjectURL(file);
+          videoPlaceholder.style.display = 'none';
+          mainVideoPlayer.style.display = 'block';
+          videoMetaText.innerText = `Uploaded File: ${file.name}`;
+        }
+      } catch (err) {
+        uploadFileInfo.innerText = `Upload error: ${err.message}`;
+      }
+    });
+
+    btnProcess.addEventListener('click', async () => {
+      const payload = {
+        source_type: selectedMode,
+        sample_filename: selectedMode === 'SAMPLE' ? sampleSelect.value : null,
+        upload_filename: selectedMode === 'UPLOAD' ? uploadedFilename : null,
+        conf_threshold: parseFloat(confSlider.value),
+        camera_height_m: parseFloat(camHeightSlider.value),
+        pitch_deg: parseFloat(camPitchSlider.value),
+        stride: 1
+      };
+
+      btnProcess.disabled = true;
+      btnProcess.innerText = '⏳ Processing Kinematics & TTC...';
+      progressContainer.style.display = 'block';
+      progressFill.style.width = '0%';
+      jobStatusBadge.innerText = 'PROCESSING';
+      jobStatusBadge.style.backgroundColor = '#EFF6FF';
+      jobStatusBadge.style.color = '#1D4ED8';
+
+      try {
+        const res = await fetch('/api/video/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const job = await res.json();
+        currentJobId = job.job_id;
+        startPolling(currentJobId);
+      } catch (err) {
+        alert(`Failed to start job: ${err.message}`);
+        btnProcess.disabled = false;
+        btnProcess.innerText = '▶ Run Perception, Kinematics & TTC';
+      }
+    });
+
+    function startPolling(jobId) {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/video/jobs/${jobId}`);
+          const job = await res.json();
+
+          progressFill.style.width = `${job.progress_percent}%`;
+          progressPercentText.innerText = `${job.progress_percent}%`;
+          progressStepText.innerText = `Frame ${job.processed_frames} / ${job.total_frames || '...'}`;
+
+          if (job.fps > 0) fpsMetric.innerText = `${job.fps.toFixed(1)}`;
+          if (job.avg_latency_ms > 0) latencyMetric.innerText = `${job.avg_latency_ms.toFixed(1)} ms`;
+
+          if (job.status === 'COMPLETED') {
+            clearInterval(pollInterval);
+            onJobComplete(job);
+          } else if (job.status === 'FAILED') {
+            clearInterval(pollInterval);
+            alert(`Failed: ${job.error_message}`);
+            btnProcess.disabled = false;
+            btnProcess.innerText = '▶ Run Perception, Kinematics & TTC';
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 700);
+    }
+
+    async function onJobComplete(job) {
+      btnProcess.disabled = false;
+      btnProcess.innerText = '▶ Run Perception, Kinematics & TTC';
+      jobStatusBadge.innerText = 'COMPLETED';
+      jobStatusBadge.style.backgroundColor = '#ECFDF5';
+      jobStatusBadge.style.color = '#065F46';
+
+      fpsMetric.innerText = `${job.fps.toFixed(1)}`;
+      latencyMetric.innerText = `${job.avg_latency_ms.toFixed(1)} ms`;
+
+      mainVideoPlayer.muted = true;
+      const staticUrl = `/outputs/${job.job_id}_annotated.mp4?t=${Date.now()}`;
+      mainVideoPlayer.src = staticUrl;
+      mainVideoPlayer.onerror = () => {
+        if (!mainVideoPlayer.src.includes('/api/video/jobs/')) {
+          console.warn('Direct static URL fallback to stream endpoint');
+          mainVideoPlayer.src = `/api/video/jobs/${job.job_id}/stream?t=${Date.now()}`;
+          mainVideoPlayer.load();
+        }
+      };
+      videoPlaceholder.style.display = 'none';
+      mainVideoPlayer.style.display = 'block';
+      mainVideoPlayer.load();
+      mainVideoPlayer.play().catch(e => console.log('Autoplay muted deferred, click play to watch:', e));
+      videoMetaText.innerHTML = `Annotated: <strong>${job.filename}</strong> (Job #${job.job_id}) &nbsp;|&nbsp; <a href="/outputs/${job.job_id}_annotated.mp4" target="_blank" style="color: var(--accent-blue);">Open Full Video ↗</a>`;
+
+      exportCard.style.display = 'block';
+      btnDownloadVideo.href = `/api/video/jobs/${job.job_id}/download`;
+
+      loadExistingJobs(false);
+
+      try {
+        const res = await fetch(`/api/video/jobs/${job.job_id}/telemetry`);
+        fullTelemetryData = await res.json();
+        jsonViewer.innerText = JSON.stringify(fullTelemetryData, null, 2);
+        renderTargetsTable(fullTelemetryData);
+        drawBEVRadar(fullTelemetryData);
+      } catch (err) {
+        console.error('Failed to load telemetry:', err);
+      }
+    }
+
+    function renderTargetsTable(telemetry) {
+      targetsTableBody.innerHTML = '';
+      if (!telemetry || !telemetry.frames || telemetry.frames.length === 0) {
+        targetsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No objects detected</td></tr>';
+        return;
+      }
+
+      let maxUrgency = 'SAFE';
+      let minTTC = Infinity;
+      let totalConflicts = 0;
+
+      const uniqueObjects = new Map();
+      telemetry.frames.forEach(fr => {
+        fr.objects.forEach(obj => {
+          if (!uniqueObjects.has(obj.track_id) || obj.confidence > uniqueObjects.get(obj.track_id).confidence) {
+            uniqueObjects.set(obj.track_id, obj);
+          }
+          if (obj.ttc_seconds && obj.ttc_seconds < minTTC) minTTC = obj.ttc_seconds;
+          if (obj.hazard_urgency === 'CRITICAL') { maxUrgency = 'CRITICAL'; totalConflicts++; }
+          else if (obj.hazard_urgency === 'WARNING' && maxUrgency !== 'CRITICAL') { maxUrgency = 'WARNING'; totalConflicts++; }
+        });
+      });
+
+      hazardMetric.innerText = `${totalConflicts}`;
+      hazardMetric.style.color = maxUrgency === 'CRITICAL' ? 'var(--status-critical)' : (maxUrgency === 'WARNING' ? 'var(--status-warning)' : 'var(--status-safe)');
+      ttcMetric.innerText = minTTC < Infinity ? `${minTTC.toFixed(1)}s` : '--';
+
+      uniqueObjects.forEach((obj) => {
+        const tr = document.createElement('tr');
+        const pillClass = `class-${obj.class_name.toLowerCase()}`;
+        const urgencyClass = `urgency-${(obj.hazard_urgency || 'SAFE').toLowerCase()}`;
+
+        const distStr = obj.distance_m ? `${obj.distance_m.toFixed(1)} m` : '--';
+        const coordStr = (obj.metric_x !== null && obj.metric_y !== null) ? `(${obj.metric_x > 0 ? '+' : ''}${obj.metric_x.toFixed(1)}m, ${obj.metric_y.toFixed(1)}m)` : '--';
+        const speedStr = (obj.speed_kmh && obj.speed_kmh > 1.0) ? `${obj.speed_kmh.toFixed(0)} km/h` : '0 km/h';
+        const ttcStr = obj.ttc_seconds ? `<strong>${obj.ttc_seconds.toFixed(1)} s</strong>` : (obj.is_approaching ? 'Closing' : 'Clear');
+        const uncertStr = obj.uncertainty_m ? `±${obj.uncertainty_m.toFixed(1)}m (${(obj.distance_confidence*100).toFixed(0)}%)` : '--';
+
+        tr.innerHTML = `
+          <td><strong>#${obj.track_id}</strong></td>
+          <td><span class="class-pill ${pillClass}">${obj.class_name}</span></td>
+          <td><strong>${distStr}</strong></td>
+          <td>${coordStr}</td>
+          <td>${speedStr}</td>
+          <td>${ttcStr}</td>
+          <td><span class="urgency-badge ${urgencyClass}">${obj.hazard_urgency || 'SAFE'}</span></td>
+          <td><span style="font-size: 0.72rem; color: var(--text-muted);">${uncertStr}</span></td>
+        `;
+        targetsTableBody.appendChild(tr);
+      });
+    }
+
+    // Top-Down Bird's-Eye-View (BEV) Radar Visualizer
+    function drawBEVRadar(telemetry) {
+      if (!bevCanvas || !bevCtx) return;
+      const w = bevCanvas.width;
+      const h = bevCanvas.height;
+
+      bevCtx.clearRect(0, 0, w, h);
+
+      // Radar Range Rings (10m, 20m, 30m)
+      const originX = w / 2;
+      const originY = h - 35;
+      const scale = 7.5; // pixels per meter
+
+      bevCtx.strokeStyle = '#334155';
+      bevCtx.lineWidth = 1;
+      [10, 20, 30].forEach(r => {
+        bevCtx.beginPath();
+        bevCtx.arc(originX, originY, r * scale, Math.PI, 0, false);
+        bevCtx.stroke();
+        bevCtx.fillStyle = '#64748B';
+        bevCtx.font = '10px JetBrains Mono';
+        bevCtx.fillText(`${r}m`, originX + r * scale - 20, originY - 4);
+      });
+
+      // Parked Car Body (Origin at rear bumper center)
+      bevCtx.fillStyle = '#38BDF8';
+      bevCtx.fillRect(originX - 12, originY, 24, 30);
+      bevCtx.fillStyle = '#0F172A';
+      bevCtx.font = '10px Inter';
+      bevCtx.fillText('CAR', originX - 9, originY + 18);
+
+      // Driver-side Door Opening Hazard Polygon (X: -2.1 to -0.8m, Y: -0.5 to 1.8m)
+      bevCtx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+      bevCtx.strokeStyle = '#EF4444';
+      bevCtx.lineWidth = 1.5;
+      const doorX1 = originX + (-2.1 * scale);
+      const doorW = (2.1 - 0.75) * scale;
+      const doorY1 = originY - (1.8 * scale);
+      const doorH = 2.4 * scale;
+      bevCtx.fillRect(doorX1, doorY1, doorW, doorH);
+      bevCtx.strokeRect(doorX1, doorY1, doorW, doorH);
+
+      bevCtx.fillStyle = '#FCA5A5';
+      bevCtx.font = '10px Inter';
+      bevCtx.fillText('DOOR ZONE', doorX1 + 4, doorY1 + 14);
+
+      if (!telemetry || !telemetry.frames || telemetry.frames.length === 0) return;
+
+      // Plot unique detected targets on BEV map
+      const latestFrame = telemetry.frames[Math.floor(telemetry.frames.length / 2)] || telemetry.frames[0];
+      latestFrame.objects.forEach(obj => {
+        if (obj.metric_x === null || obj.metric_y === null) return;
+        const px = originX + (obj.metric_x * scale);
+        const py = originY - (obj.metric_y * scale);
+
+        if (px >= 0 && px <= w && py >= 0 && py <= h) {
+          const color = obj.hazard_urgency === 'CRITICAL' ? '#EF4444' : (obj.hazard_urgency === 'WARNING' ? '#F59E0B' : '#10B981');
+          
+          // Target point
+          bevCtx.fillStyle = color;
+          bevCtx.beginPath();
+          bevCtx.arc(px, py, 6, 0, Math.PI * 2);
+          bevCtx.fill();
+
+          // Velocity vector line
+          if (obj.velocity_x_mps !== null && obj.velocity_y_mps !== null) {
+            bevCtx.strokeStyle = color;
+            bevCtx.lineWidth = 2;
+            bevCtx.beginPath();
+            bevCtx.moveTo(px, py);
+            bevCtx.lineTo(px + obj.velocity_x_mps * scale * 0.8, py - obj.velocity_y_mps * scale * 0.8);
+            bevCtx.stroke();
+          }
+
+          // Label
+          bevCtx.fillStyle = '#FFFFFF';
+          bevCtx.font = '10px JetBrains Mono';
+          bevCtx.fillText(`#${obj.track_id} ${obj.class_name}`, px + 8, py - 2);
+        }
+      });
+    }
+
+    async function loadExistingJobs(autoSelectLatest = true) {
+      try {
+        const res = await fetch('/api/video/jobs');
+        const jobs = await res.json();
+        const completed = jobs.filter(j => j.status === 'COMPLETED');
+
+        if (completed.length > 0) {
+          recentGroup.style.display = 'block';
+          recentSelect.innerHTML = '<option value="">-- Select a completed run --</option>';
+          completed.forEach((j) => {
+            const opt = document.createElement('option');
+            opt.value = j.job_id;
+            opt.innerText = `${j.filename} (Job #${j.job_id} - ${j.total_frames} frames)`;
+            recentSelect.appendChild(opt);
+          });
+
+          if (autoSelectLatest && !currentJobId) {
+            const latest = completed[completed.length - 1];
+            recentSelect.value = latest.job_id;
+            onJobComplete(latest);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load existing jobs:', err);
+      }
+    }
+
+    recentSelect.addEventListener('change', async (e) => {
+      const jid = e.target.value;
+      if (!jid) return;
+      try {
+        const res = await fetch(`/api/video/jobs/${jid}`);
+        const job = await res.json();
+        onJobComplete(job);
+      } catch (err) {
+        console.error('Failed to select run:', err);
+      }
+    });
+
+    btnCopyJson.addEventListener('click', () => {
+      if (!fullTelemetryData) return;
+      navigator.clipboard.writeText(JSON.stringify(fullTelemetryData, null, 2));
+      btnCopyJson.innerText = 'Copied!';
+      setTimeout(() => { btnCopyJson.innerText = 'Copy JSON'; }, 2000);
+    });
+
+    // Start
+    checkHealth();
+    loadSamples();
+    loadExistingJobs(true);
+  </script>
+</body>
+</html>
