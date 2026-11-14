@@ -31,6 +31,8 @@ from app.config import settings
 from app.api.routes_health import router as health_router
 from app.api.routes_video import router as video_router
 from app.api.routes_calibration import router as calibration_router
+from app.api.routes_safety import router as safety_router
+from app.api.routes_iot import router as iot_router
 from app.api.routes_video import get_detector
 
 # Setup logging
@@ -58,7 +60,28 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize YOLO model at startup: {e}")
 
+    # Phase 4: Start MQTT Automotive Gateway
+    if getattr(settings, "MQTT_ENABLED", True):
+        try:
+            from app.iot.mqtt_client import get_mqtt_gateway
+            from app.iot.bridge import get_iot_bridge
+            mqtt_client = get_mqtt_gateway()
+            mqtt_client.start()
+            get_iot_bridge()
+            logger.info(f"Phase 4 MQTT Gateway started on {settings.MQTT_BROKER_HOST}:{settings.MQTT_BROKER_PORT}")
+        except Exception as e:
+            logger.warning(f"Could not start MQTT Gateway: {e}")
+
     yield
+
+    # Phase 4: Clean MQTT Gateway Shutdown
+    if getattr(settings, "MQTT_ENABLED", True):
+        try:
+            from app.iot.mqtt_client import get_mqtt_gateway
+            get_mqtt_gateway().stop()
+        except Exception:
+            pass
+
     logger.info("DOORSAFE Server shutting down.")
 
 
@@ -79,10 +102,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register API routers
+# Register API routers (support both /api and /api/v1 prefixes)
 app.include_router(health_router, prefix=settings.API_V1_STR)
 app.include_router(video_router, prefix=settings.API_V1_STR)
 app.include_router(calibration_router, prefix=settings.API_V1_STR)
+app.include_router(safety_router, prefix=settings.API_V1_STR)
+app.include_router(iot_router, prefix=settings.API_V1_STR)
+
+# Also expose under /api/v1 for standard REST client conventions
+if settings.API_V1_STR != "/api/v1":
+    app.include_router(health_router, prefix="/api/v1")
+    app.include_router(video_router, prefix="/api/v1")
+    app.include_router(calibration_router, prefix="/api/v1")
+    app.include_router(safety_router, prefix="/api/v1")
+    app.include_router(iot_router, prefix="/api/v1")
 
 # Mount static web UI, sample videos, and processed outputs
 static_dir = Path(__file__).resolve().parent / "app" / "static"

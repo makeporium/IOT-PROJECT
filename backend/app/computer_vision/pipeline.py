@@ -19,6 +19,7 @@ from app.distance_estimation.camera_geometry import PinholeGroundProjector, Came
 from app.trajectory.kinematics import KinematicEstimator
 from app.trajectory.ttc_calculator import TTCCalculator
 from app.trajectory.predictor import TrajectoryPredictor
+from app.safety_engine.state_machine import SafetyStateMachine
 from app.models.schemas import FrameTelemetry, TrackedObject
 
 logger = logging.getLogger("doorsafe.pipeline")
@@ -71,6 +72,7 @@ class VideoProcessingPipeline:
         self.kinematics = KinematicEstimator()
         self.ttc_calculator = TTCCalculator()
         self.predictor = TrajectoryPredictor()
+        self.safety_machine = SafetyStateMachine()
 
     def process_video(
         self,
@@ -125,6 +127,7 @@ class VideoProcessingPipeline:
         self.tracker.reset()
         self.detector.reset_tracker()
         self.kinematics.reset()
+        self.safety_machine.reset()
 
         telemetry_records: List[Dict[str, Any]] = []
         frame_idx = 0
@@ -234,7 +237,21 @@ class VideoProcessingPipeline:
                 processed_count += 1
                 current_fps = 1000.0 / frame_total_ms if frame_total_ms > 0 else 0.0
 
-                # 4. Annotate frame with Metric Overlays & Warnings
+                # 4. Evaluate Phase 3 Deterministic Safety Engine & Actuator State
+                raw_objs_dict = [o.model_dump() for o in tracked_objects]
+                safety_res = self.safety_machine.update(
+                    objects=raw_objs_dict,
+                    frame_timestamp_s=timestamp_sec
+                )
+
+                # Phase 4: Broadcast to IoT MQTT Automotive Bus
+                try:
+                    from app.iot.bridge import get_iot_bridge
+                    get_iot_bridge().sync_safety_state(safety_res)
+                except Exception:
+                    pass
+
+                # 5. Annotate frame with Metric Overlays & Warnings
                 annotated_frame = self.annotator.annotate(
                     frame=frame,
                     tracked_objects=tracked_objects,
@@ -244,10 +261,10 @@ class VideoProcessingPipeline:
                     latency_ms=inf_ms
                 )
 
-                # 5. Write to output video
+                # 6. Write to output video
                 out_writer.write(annotated_frame)
 
-                # 6. Record frame telemetry
+                # 7. Record frame telemetry with Phase 3 Safety Payload
                 frame_telemetry = FrameTelemetry(
                     frame_index=frame_idx,
                     timestamp_sec=round(timestamp_sec, 3),
@@ -260,7 +277,16 @@ class VideoProcessingPipeline:
                     warning_conflicts_count=warning_conflicts,
                     objects=tracked_objects
                 )
-                telemetry_records.append(frame_telemetry.model_dump())
+                record_dict = frame_telemetry.model_dump()
+                record_dict["safety"] = {
+                    "state": safety_res.current_state.value,
+                    "actuator_command": safety_res.actuator_command.value,
+                    "servo_angle_deg": safety_res.servo_angle_deg,
+                    "is_door_locked": safety_res.is_door_locked,
+                    "threat_count": safety_res.threat_count,
+                    "min_ttc_seconds": safety_res.min_ttc_seconds
+                }
+                telemetry_records.append(record_dict)
 
                 # Progress callback
                 if progress_callback and (processed_count % 5 == 0 or frame_idx == target_frames):
@@ -290,6 +316,12 @@ class VideoProcessingPipeline:
                 "total_wall_time_sec": round(total_wall_time, 2),
                 "camera_calibration": self.projector.params.model_dump(),
                 "target_classes": settings.TARGET_CLASSES,
+                "safety_summary": {
+                    "critical_frames": sum(1 for f in telemetry_records if f.get("safety", {}).get("state") == "CRITICAL"),
+                    "warning_frames": sum(1 for f in telemetry_records if f.get("safety", {}).get("state") == "WARNING"),
+                    "safe_frames": sum(1 for f in telemetry_records if f.get("safety", {}).get("state") == "SAFE"),
+                    "total_lock_veto_frames": sum(1 for f in telemetry_records if f.get("safety", {}).get("is_door_locked") is True)
+                },
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             },
             "frames": telemetry_records

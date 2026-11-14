@@ -180,6 +180,98 @@
 
     .btn-secondary:hover { background-color: #E2E8F0; }
 
+    .btn-warning {
+      background-color: #D97706;
+      color: white;
+    }
+    .btn-warning:hover:not(:disabled) {
+      background-color: #B45309;
+    }
+
+    .safety-state-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      width: 100%;
+      letter-spacing: 0.04em;
+      transition: all 0.2s ease;
+    }
+
+    .state-safe {
+      background-color: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+
+    .state-warning {
+      background-color: #FFFBEB;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    .state-critical {
+      background-color: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+      animation: pulse-critical 1.5s infinite;
+    }
+
+    .state-failsafe {
+      background-color: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+
+    @keyframes pulse-critical {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.1); }
+    }
+
+    .servo-meter-bar {
+      width: 100%;
+      height: 10px;
+      background: #E2E8F0;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin: 0.4rem 0;
+    }
+
+    .servo-meter-fill {
+      height: 100%;
+      background: #10B981;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+    }
+
+    .touch-alert-box {
+      border-radius: 6px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .touch-alert-safe {
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #065F46;
+    }
+
+    .touch-alert-critical {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #991B1B;
+    }
+
+    .touch-alert-warning {
+      background: #FFFBEB;
+      border: 1px solid #FCD34D;
+      color: #92400E;
+    }
+
     .content-area { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .video-viewport-card {
@@ -326,6 +418,15 @@
       overflow-y: auto;
       white-space: pre-wrap;
     }
+
+    .target-row { transition: background 0.15s ease; }
+    .active-target-row {
+      background: rgba(56, 189, 248, 0.12) !important;
+    }
+    .active-target-row td:first-child strong {
+      color: var(--accent-blue);
+      text-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -340,6 +441,10 @@
       </div>
     </div>
     <div class="nav-status">
+      <span class="status-badge" id="mqttNavBadge" style="background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0;">
+        <span class="status-dot" style="background: #10B981;"></span>
+        <span id="mqttNavText">MQTT: Connecting...</span>
+      </span>
       <span class="status-badge" id="systemStatusBadge">
         <span class="status-dot"></span>
         <span id="systemStatusText">Connecting...</span>
@@ -391,6 +496,50 @@
 
         <button id="btnProcess" class="btn btn-primary">
           ▶ Run Perception, Kinematics & TTC
+        </button>
+      </div>
+
+      <!-- Automotive Door Safety & Actuator Console (Phase 3) -->
+      <div class="card" id="safetyActuatorCard">
+        <div class="card-title">
+          <span>Door Safety & Actuator Console</span>
+          <span style="font-size: 0.70rem; color: #DC2626; font-weight: 700; background: #FEE2E2; padding: 2px 6px; border-radius: 4px;">PHASE 3 VETO</span>
+        </div>
+
+        <!-- Live Vehicle Safety State -->
+        <div class="form-group">
+          <label class="form-label">Deterministic Safety State</label>
+          <div id="safetyStateDisplay" class="safety-state-pill state-safe">
+            ● SAFE (LANE CLEAR)
+          </div>
+        </div>
+
+        <!-- Physical Door Actuator (Servo) Status -->
+        <div class="form-group" style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600;">
+            <span>Door Latch Actuator</span>
+            <span id="servoAngleLabel" style="color: #10B981; font-family: 'JetBrains Mono', monospace;">90° (UNLATCHED)</span>
+          </div>
+          <div class="servo-meter-bar">
+            <div id="servoMeterFill" class="servo-meter-fill" style="width: 100%;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted);">
+            <span>0° (Physically Locked)</span>
+            <span id="lockHysteresisLabel" style="font-style: italic;">Hysteresis Hold: 1.0s</span>
+            <span>90° (Unlatched)</span>
+          </div>
+        </div>
+
+        <!-- Passenger Door Handle Touch Simulator -->
+        <div class="form-group" style="margin-bottom: 0.5rem;">
+          <button id="btnHandleTouch" class="btn btn-warning" type="button">
+            ✋ Touch Door Handle (Capacitive Trigger)
+          </button>
+          <div id="handleTouchAlert" class="touch-alert-box" style="display: none; margin-top: 0.5rem;"></div>
+        </div>
+
+        <button id="btnResetSafety" class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.35rem 0.5rem;" type="button">
+          🔄 Reset Safety State Machine
         </button>
       </div>
 
@@ -500,7 +649,10 @@
       <div class="card">
         <div class="card-title">
           <span>Top-Down Bird's-Eye-View (BEV) Spatial Radar & Door Danger Corridor</span>
-          <span style="font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">Metric Coordinates (X=Lateral, Y=Longitudinal)</span>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span id="radarLiveBadge" class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 4px;">● LIVE VIDEO SYNC</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">Metric Coordinates (X=Lateral, Y=Longitudinal)</span>
+          </div>
         </div>
         <div style="background: #0F172A; border-radius: 8px; padding: 0.75rem; display: flex; justify-content: center;">
           <canvas id="bevCanvas" width="760" height="260" style="max-width: 100%; border-radius: 6px;"></canvas>
@@ -534,6 +686,53 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Phase 4: IoT Controller, ESP32 & MQTT Gateway Console -->
+      <div class="card" id="iotGatewayCard">
+        <div class="card-title">
+          <span>IoT Controller, ESP32 Hardware & MQTT Automotive Bus</span>
+          <span style="font-size: 0.70rem; color: #0284C7; font-weight: 700; background: #E0F2FE; padding: 2px 6px; border-radius: 4px;">PHASE 4: IOT & ACTUATION</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+          <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.75rem;">
+            <div style="font-size: 0.70rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">MQTT Broker Gateway</div>
+            <div id="mqttBrokerText" style="font-size: 0.85rem; font-weight: 700; color: #0284C7; margin-top: 0.2rem; font-family: 'JetBrains Mono', monospace;">broker.emqx.io:1883</div>
+            <div id="mqttThroughputText" style="font-size: 0.70rem; color: var(--text-muted); margin-top: 0.2rem;">Published: 0 | Received: 0</div>
+          </div>
+          <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.75rem;">
+            <div style="font-size: 0.70rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">ESP32 Door ECU (Driver Door)</div>
+            <div id="esp32EcuText" style="font-size: 0.85rem; font-weight: 700; color: #10B981; margin-top: 0.2rem;">esp32_driver_door (READY)</div>
+            <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 0.2rem;">GPIO 4: Touch | GPIO 13: SG90 PWM</div>
+          </div>
+          <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.75rem;">
+            <div style="font-size: 0.70rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">ESP32 Rear Radar / Ultrasonic</div>
+            <div id="esp32RadarText" style="font-size: 0.85rem; font-weight: 700; color: #8B5CF6; margin-top: 0.2rem;">HC-SR04 Active</div>
+            <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 0.2rem;">GPIO 5: Trig | GPIO 18: Echo</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+          <button id="btnSimulateEspTouch" class="btn btn-warning" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem;" type="button">
+            ✋ Simulate ESP32 Capacitive Touch (MQTT)
+          </button>
+          <button id="btnSimulateRadar" class="btn btn-secondary" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem;" type="button">
+            📡 Simulate Rear Radar Echo (1.4m)
+          </button>
+          <a href="https://wokwi.com" target="_blank" class="btn btn-secondary" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem; text-decoration: none;">
+            ⚡ Open Wokwi Circuit Diagram
+          </a>
+        </div>
+
+        <!-- Live MQTT Message Log Terminal -->
+        <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+          <span>Live Automotive MQTT Packet Bus (Auto-Updating)</span>
+          <span id="mqttPacketCountText" style="font-family: 'JetBrains Mono', monospace; font-size: 0.70rem; color: var(--text-muted);">0 packets</span>
+        </div>
+        <div id="mqttLogViewer" class="json-box" style="height: 160px; font-size: 0.72rem; line-height: 1.5; overflow-y: auto;">
+          <span style="color: #64748B;">// MQTT automotive message feed will display published and received packets here...</span>
+        </div>
       </div>
 
       <!-- Raw JSON Telemetry Drawer -->
@@ -637,6 +836,23 @@
       selectedMode = 'SAMPLE';
       uploadedFilename = null;
       uploadFileInfo.style.display = 'none';
+
+      // Cleanly reset telemetry & radar state for raw preview
+      if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+      fullTelemetryData = null;
+      renderEmptyBEVRadar(`Raw Source: ${sampleSelect.value}. Click Run Perception to track.`);
+      targetsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Raw source preview. Click "Run Perception, Kinematics & TTC" to process.</td></tr>';
+      hazardMetric.innerText = '--';
+      hazardMetric.style.color = 'var(--text-primary)';
+      ttcMetric.innerText = '--';
+      fpsMetric.innerText = '--';
+      latencyMetric.innerText = '--';
+      jsonViewer.innerText = '// Telemetry payload will populate after perception run completes.';
+      exportCard.style.display = 'none';
+      jobStatusBadge.innerText = 'RAW PREVIEW';
+      jobStatusBadge.style.backgroundColor = '#F1F5F9';
+      jobStatusBadge.style.color = '#475569';
+
       mainVideoPlayer.muted = true;
       mainVideoPlayer.src = `/samples/${sampleSelect.value}`;
       mainVideoPlayer.onerror = () => {
@@ -647,8 +863,9 @@
       };
       videoPlaceholder.style.display = 'none';
       mainVideoPlayer.style.display = 'block';
+      mainVideoPlayer.currentTime = 0;
       mainVideoPlayer.load();
-      videoMetaText.innerHTML = `Raw Source: ${sampleSelect.value} &nbsp;|&nbsp; <a href="/samples/${sampleSelect.value}" target="_blank" style="color: var(--accent-blue);">Open Video Tab ↗</a>`;
+      videoMetaText.innerHTML = `Raw Source: <strong>${sampleSelect.value}</strong> &nbsp;|&nbsp; <a href="/samples/${sampleSelect.value}" target="_blank" style="color: var(--accent-blue);">Open Video Tab ↗</a>`;
     });
 
     dropzone.addEventListener('click', () => fileInput.click());
@@ -668,9 +885,27 @@
           uploadedFilename = data.filename;
           uploadFileInfo.innerText = `Uploaded: ${data.original_name}`;
           sampleSelect.selectedIndex = -1;
+
+          // Clean reset
+          if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+          fullTelemetryData = null;
+          renderEmptyBEVRadar(`Uploaded Video: ${file.name}. Click Run Perception to track.`);
+          targetsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Uploaded video ready. Click "Run Perception, Kinematics & TTC" to process.</td></tr>';
+          hazardMetric.innerText = '--';
+          ttcMetric.innerText = '--';
+          fpsMetric.innerText = '--';
+          latencyMetric.innerText = '--';
+          exportCard.style.display = 'none';
+          jobStatusBadge.innerText = 'UPLOADED';
+          jobStatusBadge.style.backgroundColor = '#F1F5F9';
+          jobStatusBadge.style.color = '#475569';
+
+          mainVideoPlayer.muted = true;
           mainVideoPlayer.src = URL.createObjectURL(file);
           videoPlaceholder.style.display = 'none';
           mainVideoPlayer.style.display = 'block';
+          mainVideoPlayer.currentTime = 0;
+          mainVideoPlayer.load();
           videoMetaText.innerText = `Uploaded File: ${file.name}`;
         }
       } catch (err) {
@@ -688,6 +923,10 @@
         pitch_deg: parseFloat(camPitchSlider.value),
         stride: 1
       };
+
+      if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+      fullTelemetryData = null;
+      renderEmptyBEVRadar('Processing frames... BEV radar will activate upon completion.');
 
       btnProcess.disabled = true;
       btnProcess.innerText = '⏳ Processing Kinematics & TTC...';
@@ -742,46 +981,80 @@
       }, 700);
     }
 
-    async function onJobComplete(job) {
-      btnProcess.disabled = false;
-      btnProcess.innerText = '▶ Run Perception, Kinematics & TTC';
-      jobStatusBadge.innerText = 'COMPLETED';
-      jobStatusBadge.style.backgroundColor = '#ECFDF5';
-      jobStatusBadge.style.color = '#065F46';
+    let bevAnimationId = null;
 
-      fpsMetric.innerText = `${job.fps.toFixed(1)}`;
-      latencyMetric.innerText = `${job.avg_latency_ms.toFixed(1)} ms`;
+    function renderEmptyBEVRadar(message = 'No telemetry data loaded. Run perception or select a completed run.') {
+      if (!bevCanvas || !bevCtx) return;
+      const w = bevCanvas.width;
+      const h = bevCanvas.height;
+      bevCtx.clearRect(0, 0, w, h);
 
-      mainVideoPlayer.muted = true;
-      const staticUrl = `/outputs/${job.job_id}_annotated.mp4?t=${Date.now()}`;
-      mainVideoPlayer.src = staticUrl;
-      mainVideoPlayer.onerror = () => {
-        if (!mainVideoPlayer.src.includes('/api/video/jobs/')) {
-          console.warn('Direct static URL fallback to stream endpoint');
-          mainVideoPlayer.src = `/api/video/jobs/${job.job_id}/stream?t=${Date.now()}`;
-          mainVideoPlayer.load();
+      const originX = w / 2;
+      const originY = h - 35;
+      const scale = 7.0;
+
+      // Range rings
+      bevCtx.strokeStyle = '#1E293B';
+      bevCtx.lineWidth = 1;
+      [5, 10, 15, 20, 25, 30].forEach(r => {
+        bevCtx.beginPath();
+        bevCtx.arc(originX, originY, r * scale, Math.PI, 0, false);
+        bevCtx.stroke();
+        if (r % 10 === 0) {
+          bevCtx.fillStyle = '#64748B';
+          bevCtx.font = '10px JetBrains Mono';
+          bevCtx.fillText(`${r}m`, originX + r * scale - 22, originY - 4);
+          bevCtx.fillText(`${r}m`, originX - r * scale + 4, originY - 4);
         }
-      };
-      videoPlaceholder.style.display = 'none';
-      mainVideoPlayer.style.display = 'block';
-      mainVideoPlayer.load();
-      mainVideoPlayer.play().catch(e => console.log('Autoplay muted deferred, click play to watch:', e));
-      videoMetaText.innerHTML = `Annotated: <strong>${job.filename}</strong> (Job #${job.job_id}) &nbsp;|&nbsp; <a href="/outputs/${job.job_id}_annotated.mp4" target="_blank" style="color: var(--accent-blue);">Open Full Video ↗</a>`;
+      });
 
-      exportCard.style.display = 'block';
-      btnDownloadVideo.href = `/api/video/jobs/${job.job_id}/download`;
+      // Ego vehicle
+      bevCtx.fillStyle = '#38BDF8';
+      bevCtx.fillRect(originX - 13, originY, 26, 32);
+      bevCtx.fillStyle = '#0F172A';
+      bevCtx.font = 'bold 10px Inter';
+      bevCtx.fillText('CAR', originX - 10, originY + 19);
 
-      loadExistingJobs(false);
+      // Door hazard zone
+      const doorX1 = originX + (-2.10 * scale);
+      const doorW = (2.10 - 0.75) * scale;
+      const doorY1 = originY - (1.80 * scale);
+      const doorH = (1.80 - (-0.60)) * scale;
+      bevCtx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+      bevCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+      bevCtx.lineWidth = 1.2;
+      bevCtx.fillRect(doorX1, doorY1, doorW, doorH);
+      bevCtx.strokeRect(doorX1, doorY1, doorW, doorH);
 
-      try {
-        const res = await fetch(`/api/video/jobs/${job.job_id}/telemetry`);
-        fullTelemetryData = await res.json();
-        jsonViewer.innerText = JSON.stringify(fullTelemetryData, null, 2);
-        renderTargetsTable(fullTelemetryData);
-        drawBEVRadar(fullTelemetryData);
-      } catch (err) {
-        console.error('Failed to load telemetry:', err);
+      bevCtx.fillStyle = '#94A3B8';
+      bevCtx.font = 'bold 9px Inter';
+      bevCtx.fillText('DOOR ZONE', doorX1 + 4, doorY1 + 13);
+
+      // Status message
+      bevCtx.fillStyle = '#64748B';
+      bevCtx.font = '12px Inter';
+      bevCtx.textAlign = 'center';
+      bevCtx.fillText(message, originX, originY - 95);
+      bevCtx.textAlign = 'start';
+    }
+
+    function findClosestFrame(timeSec) {
+      if (!fullTelemetryData || !fullTelemetryData.frames || fullTelemetryData.frames.length === 0) return null;
+      const frames = fullTelemetryData.frames;
+      if (timeSec <= frames[0].timestamp_sec) return frames[0];
+      if (timeSec >= frames[frames.length - 1].timestamp_sec) return frames[frames.length - 1];
+
+      let low = 0, high = frames.length - 1;
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        if (frames[mid].timestamp_sec < timeSec) {
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
       }
+      const idx = Math.min(Math.max(0, low), frames.length - 1);
+      return frames[idx];
     }
 
     function renderTargetsTable(telemetry) {
@@ -813,6 +1086,8 @@
 
       uniqueObjects.forEach((obj) => {
         const tr = document.createElement('tr');
+        tr.className = 'target-row';
+        tr.id = `target-row-${obj.track_id}`;
         const pillClass = `class-${obj.class_name.toLowerCase()}`;
         const urgencyClass = `urgency-${(obj.hazard_urgency || 'SAFE').toLowerCase()}`;
 
@@ -836,89 +1111,355 @@
       });
     }
 
-    // Top-Down Bird's-Eye-View (BEV) Radar Visualizer
-    function drawBEVRadar(telemetry) {
+    function updateSafetyUI(state, servoAngle, isLocked) {
+      const safetyStateDisplay = document.getElementById('safetyStateDisplay');
+      const servoAngleLabel = document.getElementById('servoAngleLabel');
+      const servoMeterFill = document.getElementById('servoMeterFill');
+
+      if (!safetyStateDisplay || !servoAngleLabel || !servoMeterFill) return;
+
+      safetyStateDisplay.className = 'safety-state-pill';
+      if (state === 'CRITICAL') {
+        safetyStateDisplay.classList.add('state-critical');
+        safetyStateDisplay.innerHTML = '⛔ CRITICAL (VETO ENGAGED)';
+        servoAngleLabel.innerHTML = '0° (LOCKED - VETO)';
+        servoAngleLabel.style.color = '#DC2626';
+        servoMeterFill.style.width = '0%';
+        servoMeterFill.style.backgroundColor = '#DC2626';
+      } else if (state === 'WARNING') {
+        safetyStateDisplay.classList.add('state-warning');
+        safetyStateDisplay.innerHTML = '⚠️ WARNING (CLOSING HAZARD)';
+        servoAngleLabel.innerHTML = '90° (UNLATCHED + CHIME)';
+        servoAngleLabel.style.color = '#D97706';
+        servoMeterFill.style.width = '100%';
+        servoMeterFill.style.backgroundColor = '#F59E0B';
+      } else if (state === 'FAIL_SAFE') {
+        safetyStateDisplay.classList.add('state-failsafe');
+        safetyStateDisplay.innerHTML = '🛡️ FAIL-SAFE LOCK';
+        servoAngleLabel.innerHTML = '0° (FAIL-SAFE LOCK)';
+        servoAngleLabel.style.color = '#2563EB';
+        servoMeterFill.style.width = '0%';
+        servoMeterFill.style.backgroundColor = '#2563EB';
+      } else {
+        safetyStateDisplay.classList.add('state-safe');
+        safetyStateDisplay.innerHTML = '● SAFE (LANE CLEAR)';
+        servoAngleLabel.innerHTML = '90° (UNLATCHED)';
+        servoAngleLabel.style.color = '#10B981';
+        servoMeterFill.style.width = '100%';
+        servoMeterFill.style.backgroundColor = '#10B981';
+      }
+    }
+
+    function updateLiveMetricsFromFrame(frame) {
+      document.querySelectorAll('.target-row').forEach(r => r.classList.remove('active-target-row'));
+
+      if (!frame || !frame.objects || frame.objects.length === 0) {
+        hazardMetric.innerText = '0';
+        hazardMetric.style.color = 'var(--status-safe)';
+        ttcMetric.innerText = '--';
+        updateSafetyUI('SAFE', 90, false);
+        return;
+      }
+
+      let frameMaxUrgency = 'SAFE';
+      let frameMinTTC = Infinity;
+      let frameConflicts = 0;
+
+      frame.objects.forEach(obj => {
+        const row = document.getElementById(`target-row-${obj.track_id}`);
+        if (row) row.classList.add('active-target-row');
+
+        if (obj.ttc_seconds && obj.ttc_seconds < frameMinTTC) frameMinTTC = obj.ttc_seconds;
+        if (obj.hazard_urgency === 'CRITICAL') { frameMaxUrgency = 'CRITICAL'; frameConflicts++; }
+        else if (obj.hazard_urgency === 'WARNING' && frameMaxUrgency !== 'CRITICAL') { frameMaxUrgency = 'WARNING'; frameConflicts++; }
+      });
+
+      hazardMetric.innerText = `${frameConflicts}`;
+      hazardMetric.style.color = frameMaxUrgency === 'CRITICAL' ? 'var(--status-critical)' : (frameMaxUrgency === 'WARNING' ? 'var(--status-warning)' : 'var(--status-safe)');
+      ttcMetric.innerText = frameMinTTC < Infinity ? `${frameMinTTC.toFixed(1)}s` : '--';
+
+      // Phase 3: Update Safety State Machine & Actuator Status
+      let state = 'SAFE';
+      let servoAngle = 90;
+      let isLocked = false;
+      if (frame.safety) {
+        state = frame.safety.state;
+        servoAngle = frame.safety.servo_angle_deg;
+        isLocked = frame.safety.is_door_locked;
+      } else if (frameMaxUrgency === 'CRITICAL') {
+        state = 'CRITICAL';
+        servoAngle = 0;
+        isLocked = true;
+      } else if (frameMaxUrgency === 'WARNING') {
+        state = 'WARNING';
+        servoAngle = 90;
+        isLocked = false;
+      }
+      updateSafetyUI(state, servoAngle, isLocked);
+    }
+
+    function renderBEVFrame(frame) {
       if (!bevCanvas || !bevCtx) return;
       const w = bevCanvas.width;
       const h = bevCanvas.height;
 
       bevCtx.clearRect(0, 0, w, h);
 
-      // Radar Range Rings (10m, 20m, 30m)
       const originX = w / 2;
       const originY = h - 35;
-      const scale = 7.5; // pixels per meter
+      const scale = 7.0;
 
-      bevCtx.strokeStyle = '#334155';
+      // 1. Range Rings
+      bevCtx.strokeStyle = '#1E293B';
       bevCtx.lineWidth = 1;
-      [10, 20, 30].forEach(r => {
+      [5, 10, 15, 20, 25, 30].forEach(r => {
         bevCtx.beginPath();
         bevCtx.arc(originX, originY, r * scale, Math.PI, 0, false);
         bevCtx.stroke();
-        bevCtx.fillStyle = '#64748B';
-        bevCtx.font = '10px JetBrains Mono';
-        bevCtx.fillText(`${r}m`, originX + r * scale - 20, originY - 4);
+        if (r % 10 === 0) {
+          bevCtx.fillStyle = '#64748B';
+          bevCtx.font = '10px JetBrains Mono';
+          bevCtx.fillText(`${r}m`, originX + r * scale - 22, originY - 4);
+          bevCtx.fillText(`${r}m`, originX - r * scale + 4, originY - 4);
+        }
       });
 
-      // Parked Car Body (Origin at rear bumper center)
-      bevCtx.fillStyle = '#38BDF8';
-      bevCtx.fillRect(originX - 12, originY, 24, 30);
-      bevCtx.fillStyle = '#0F172A';
-      bevCtx.font = '10px Inter';
-      bevCtx.fillText('CAR', originX - 9, originY + 18);
+      // Lateral Guide Lines
+      bevCtx.strokeStyle = '#1E293B';
+      bevCtx.setLineDash([2, 4]);
+      [-2, 0, 2].forEach(x => {
+        bevCtx.beginPath();
+        bevCtx.moveTo(originX + x * scale, originY);
+        bevCtx.lineTo(originX + x * scale, originY - 30 * scale);
+        bevCtx.stroke();
+      });
+      bevCtx.setLineDash([]);
 
-      // Driver-side Door Opening Hazard Polygon (X: -2.1 to -0.8m, Y: -0.5 to 1.8m)
-      bevCtx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-      bevCtx.strokeStyle = '#EF4444';
-      bevCtx.lineWidth = 1.5;
-      const doorX1 = originX + (-2.1 * scale);
-      const doorW = (2.1 - 0.75) * scale;
-      const doorY1 = originY - (1.8 * scale);
-      const doorH = 2.4 * scale;
+      // Door Zone conflict check
+      let hasCriticalDoorHazard = false;
+      if (frame && frame.objects) {
+        hasCriticalDoorHazard = frame.objects.some(o => o.hazard_urgency === 'CRITICAL' || o.is_conflict_predicted);
+      }
+
+      // 2. Door Hazard Corridor (Driver-side rear: X: -2.10 to -0.75m, Y: -0.60 to 1.80m)
+      const doorX1 = originX + (-2.10 * scale);
+      const doorW = (2.10 - 0.75) * scale;
+      const doorY1 = originY - (1.80 * scale);
+      const doorH = (1.80 - (-0.60)) * scale;
+
+      if (hasCriticalDoorHazard) {
+        bevCtx.fillStyle = 'rgba(239, 68, 68, 0.40)';
+        bevCtx.strokeStyle = '#EF4444';
+        bevCtx.lineWidth = 2.5;
+      } else {
+        bevCtx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+        bevCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+        bevCtx.lineWidth = 1.2;
+      }
       bevCtx.fillRect(doorX1, doorY1, doorW, doorH);
       bevCtx.strokeRect(doorX1, doorY1, doorW, doorH);
 
-      bevCtx.fillStyle = '#FCA5A5';
-      bevCtx.font = '10px Inter';
-      bevCtx.fillText('DOOR ZONE', doorX1 + 4, doorY1 + 14);
+      bevCtx.fillStyle = hasCriticalDoorHazard ? '#FCA5A5' : '#94A3B8';
+      bevCtx.font = 'bold 9px Inter';
+      bevCtx.fillText(hasCriticalDoorHazard ? '⚠ CONFLICT ZONE' : 'DOOR ZONE', doorX1 + 4, doorY1 + 13);
 
-      if (!telemetry || !telemetry.frames || telemetry.frames.length === 0) return;
+      // 3. Ego Vehicle (Parked Car Body)
+      bevCtx.fillStyle = '#38BDF8';
+      bevCtx.fillRect(originX - 13, originY, 26, 32);
+      bevCtx.fillStyle = '#0F172A';
+      bevCtx.font = 'bold 10px Inter';
+      bevCtx.fillText('CAR', originX - 10, originY + 19);
 
-      // Plot unique detected targets on BEV map
-      const latestFrame = telemetry.frames[Math.floor(telemetry.frames.length / 2)] || telemetry.frames[0];
-      latestFrame.objects.forEach(obj => {
+      // 4. BEV Telemetry HUD Text
+      bevCtx.fillStyle = '#94A3B8';
+      bevCtx.font = '10px JetBrains Mono';
+      const timeStr = frame ? `${frame.timestamp_sec.toFixed(2)}s (Frame #${frame.frame_index})` : '--';
+      bevCtx.fillText(`TIME: ${timeStr}`, 15, 20);
+
+      const activeCount = frame && frame.objects ? frame.objects.length : 0;
+      bevCtx.fillText(`ACTIVE TARGETS: ${activeCount}`, 15, 36);
+
+      if (hasCriticalDoorHazard) {
+        bevCtx.fillStyle = '#EF4444';
+        bevCtx.font = 'bold 11px Inter';
+        bevCtx.fillText('ALERT: CRITICAL DOOR CONFLICT', w - 240, 20);
+      } else {
+        bevCtx.fillStyle = '#10B981';
+        bevCtx.font = '11px Inter';
+        bevCtx.fillText('STATUS: CORRIDOR CLEAR', w - 170, 20);
+      }
+
+      if (!frame || !frame.objects || frame.objects.length === 0) {
+        bevCtx.fillStyle = '#475569';
+        bevCtx.font = 'italic 11px Inter';
+        bevCtx.fillText('No targets tracked in this frame', originX - 85, originY - 100);
+        return;
+      }
+
+      // 5. Render Moving Detected Objects
+      frame.objects.forEach(obj => {
         if (obj.metric_x === null || obj.metric_y === null) return;
         const px = originX + (obj.metric_x * scale);
         const py = originY - (obj.metric_y * scale);
 
-        if (px >= 0 && px <= w && py >= 0 && py <= h) {
-          const color = obj.hazard_urgency === 'CRITICAL' ? '#EF4444' : (obj.hazard_urgency === 'WARNING' ? '#F59E0B' : '#10B981');
-          
-          // Target point
-          bevCtx.fillStyle = color;
+        if (px < -20 || px > w + 20 || py < -20 || py > h + 20) return;
+
+        const isCrit = obj.hazard_urgency === 'CRITICAL';
+        const isWarn = obj.hazard_urgency === 'WARNING';
+        const color = isCrit ? '#EF4444' : (isWarn ? '#F59E0B' : '#10B981');
+
+        // Predicted Trajectory Waypoints
+        if (obj.predicted_path && obj.predicted_path.length > 0) {
           bevCtx.beginPath();
-          bevCtx.arc(px, py, 6, 0, Math.PI * 2);
-          bevCtx.fill();
-
-          // Velocity vector line
-          if (obj.velocity_x_mps !== null && obj.velocity_y_mps !== null) {
-            bevCtx.strokeStyle = color;
-            bevCtx.lineWidth = 2;
-            bevCtx.beginPath();
-            bevCtx.moveTo(px, py);
-            bevCtx.lineTo(px + obj.velocity_x_mps * scale * 0.8, py - obj.velocity_y_mps * scale * 0.8);
-            bevCtx.stroke();
-          }
-
-          // Label
-          bevCtx.fillStyle = '#FFFFFF';
-          bevCtx.font = '10px JetBrains Mono';
-          bevCtx.fillText(`#${obj.track_id} ${obj.class_name}`, px + 8, py - 2);
+          bevCtx.strokeStyle = color;
+          bevCtx.lineWidth = isCrit ? 2 : 1.5;
+          bevCtx.setLineDash([3, 3]);
+          bevCtx.moveTo(px, py);
+          obj.predicted_path.forEach(pt => {
+            const ptx = originX + (pt.x_m * scale);
+            const pty = originY - (pt.y_m * scale);
+            bevCtx.lineTo(ptx, pty);
+          });
+          bevCtx.stroke();
+          bevCtx.setLineDash([]);
         }
+
+        // Velocity Vector Line
+        if (obj.velocity_x_mps !== null && obj.velocity_y_mps !== null) {
+          const vxLen = obj.velocity_x_mps * scale * 0.7;
+          const vyLen = obj.velocity_y_mps * scale * 0.7;
+          bevCtx.beginPath();
+          bevCtx.strokeStyle = color;
+          bevCtx.lineWidth = 2;
+          bevCtx.moveTo(px, py);
+          bevCtx.lineTo(px + vxLen, py - vyLen);
+          bevCtx.stroke();
+        }
+
+        // Target Point with Halo
+        bevCtx.fillStyle = color;
+        bevCtx.beginPath();
+        bevCtx.arc(px, py, isCrit ? 7 : 5, 0, Math.PI * 2);
+        bevCtx.fill();
+
+        if (isCrit) {
+          bevCtx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+          bevCtx.lineWidth = 2;
+          bevCtx.beginPath();
+          bevCtx.arc(px, py, 11, 0, Math.PI * 2);
+          bevCtx.stroke();
+        }
+
+        // Object Label
+        bevCtx.fillStyle = '#FFFFFF';
+        bevCtx.font = 'bold 9px JetBrains Mono';
+        const ttcText = obj.ttc_seconds ? ` [TTC ${obj.ttc_seconds.toFixed(1)}s]` : '';
+        const speedText = obj.speed_kmh > 1 ? ` ${obj.speed_kmh.toFixed(0)}kph` : '';
+        bevCtx.fillText(`#${obj.track_id} ${obj.class_name}${speedText}${ttcText}`, px + 9, py - 3);
       });
     }
 
-    async function loadExistingJobs(autoSelectLatest = true) {
+    function syncRadarWithVideo() {
+      if (!fullTelemetryData || !fullTelemetryData.frames || fullTelemetryData.frames.length === 0) {
+        renderEmptyBEVRadar();
+        return;
+      }
+      const curTime = mainVideoPlayer.currentTime || 0;
+      const currentFrame = findClosestFrame(curTime);
+      if (currentFrame) {
+        renderBEVFrame(currentFrame);
+        updateLiveMetricsFromFrame(currentFrame);
+      }
+    }
+
+    function startRadarSyncLoop() {
+      if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+      function loop() {
+        if (!mainVideoPlayer.paused && !mainVideoPlayer.ended) {
+          syncRadarWithVideo();
+          bevAnimationId = requestAnimationFrame(loop);
+        }
+      }
+      bevAnimationId = requestAnimationFrame(loop);
+    }
+
+    // Video synchronization event hooks (UNCONDITIONAL timeupdate ensures radar NEVER freezes)
+    mainVideoPlayer.addEventListener('timeupdate', syncRadarWithVideo);
+    mainVideoPlayer.addEventListener('play', startRadarSyncLoop);
+    mainVideoPlayer.addEventListener('playing', startRadarSyncLoop);
+    mainVideoPlayer.addEventListener('seeking', syncRadarWithVideo);
+    mainVideoPlayer.addEventListener('seeked', syncRadarWithVideo);
+    mainVideoPlayer.addEventListener('pause', () => {
+      if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+      syncRadarWithVideo();
+    });
+    mainVideoPlayer.addEventListener('ended', () => {
+      if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+      syncRadarWithVideo();
+    });
+
+    async function onJobComplete(job) {
+      if (!job || !job.job_id) return;
+      currentJobId = job.job_id;
+
+      btnProcess.disabled = false;
+      btnProcess.innerText = '▶ Run Perception, Kinematics & TTC';
+      jobStatusBadge.innerText = 'COMPLETED';
+      jobStatusBadge.style.backgroundColor = '#ECFDF5';
+      jobStatusBadge.style.color = '#065F46';
+
+      fpsMetric.innerText = `${job.fps.toFixed(1)}`;
+      latencyMetric.innerText = `${job.avg_latency_ms.toFixed(1)} ms`;
+
+      // Cancel running loop and display temporary loading state on radar
+      if (bevAnimationId) cancelAnimationFrame(bevAnimationId);
+      renderEmptyBEVRadar(`Loading telemetry for Job #${job.job_id}...`);
+
+      exportCard.style.display = 'block';
+      btnDownloadVideo.href = `/api/video/jobs/${job.job_id}/download`;
+
+      // Update dropdown preserving current job selection
+      await loadExistingJobs(job.job_id);
+
+      // Fetch telemetry payload BEFORE activating player
+      try {
+        const res = await fetch(`/api/video/jobs/${job.job_id}/telemetry`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        fullTelemetryData = await res.json();
+        jsonViewer.innerText = JSON.stringify(fullTelemetryData, null, 2);
+        renderTargetsTable(fullTelemetryData);
+      } catch (err) {
+        console.error('Failed to load telemetry:', err);
+        fullTelemetryData = null;
+        renderEmptyBEVRadar(`Error loading telemetry for Job #${job.job_id}`);
+        return;
+      }
+
+      // Configure video source
+      mainVideoPlayer.muted = true;
+      const staticUrl = `/outputs/${job.job_id}_annotated.mp4?t=${Date.now()}`;
+      mainVideoPlayer.src = staticUrl;
+      mainVideoPlayer.onerror = () => {
+        if (!mainVideoPlayer.src.includes('/api/video/jobs/')) {
+          console.warn('Direct static URL fallback to stream endpoint');
+          mainVideoPlayer.src = `/api/video/jobs/${job.job_id}/stream?t=${Date.now()}`;
+          mainVideoPlayer.load();
+        }
+      };
+      videoPlaceholder.style.display = 'none';
+      mainVideoPlayer.style.display = 'block';
+      videoMetaText.innerHTML = `Annotated: <strong>${job.filename}</strong> (Job #${job.job_id}) &nbsp;|&nbsp; <a href="/outputs/${job.job_id}_annotated.mp4" target="_blank" style="color: var(--accent-blue);">Open Full Video ↗</a>`;
+
+      mainVideoPlayer.currentTime = 0;
+      mainVideoPlayer.load();
+
+      // Render frame 0 immediately
+      syncRadarWithVideo();
+
+      mainVideoPlayer.play().catch(e => console.log('Autoplay deferred, video ready:', e));
+    }
+
+    async function loadExistingJobs(selectedJobId = null) {
       try {
         const res = await fetch('/api/video/jobs');
         const jobs = await res.json();
@@ -926,18 +1467,25 @@
 
         if (completed.length > 0) {
           recentGroup.style.display = 'block';
+          const activeId = selectedJobId || recentSelect.value;
           recentSelect.innerHTML = '<option value="">-- Select a completed run --</option>';
           completed.forEach((j) => {
             const opt = document.createElement('option');
             opt.value = j.job_id;
             opt.innerText = `${j.filename} (Job #${j.job_id} - ${j.total_frames} frames)`;
+            if (activeId && j.job_id === activeId) {
+              opt.selected = true;
+            }
             recentSelect.appendChild(opt);
           });
+          if (activeId) {
+            recentSelect.value = activeId;
+          }
 
-          if (autoSelectLatest && !currentJobId) {
+          if (!selectedJobId && !currentJobId) {
             const latest = completed[completed.length - 1];
             recentSelect.value = latest.job_id;
-            onJobComplete(latest);
+            await onJobComplete(latest);
           }
         }
       } catch (err) {
@@ -951,7 +1499,7 @@
       try {
         const res = await fetch(`/api/video/jobs/${jid}`);
         const job = await res.json();
-        onJobComplete(job);
+        await onJobComplete(job);
       } catch (err) {
         console.error('Failed to select run:', err);
       }
@@ -964,10 +1512,189 @@
       setTimeout(() => { btnCopyJson.innerText = 'Copy JSON'; }, 2000);
     });
 
+    // Phase 3: Interactive Handle Touch & Safety State Machine Handlers
+    const btnHandleTouch = document.getElementById('btnHandleTouch');
+    const handleTouchAlert = document.getElementById('handleTouchAlert');
+    const btnResetSafety = document.getElementById('btnResetSafety');
+
+    if (btnHandleTouch) {
+      btnHandleTouch.addEventListener('click', async () => {
+        const currentTime = mainVideoPlayer ? mainVideoPlayer.currentTime : 0;
+        const currentFrame = findClosestFrame(currentTime);
+        const objs = currentFrame ? (currentFrame.objects || []) : [];
+
+        try {
+          btnHandleTouch.disabled = true;
+          const resp = await fetch('/api/safety/handle-touch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ touched: true, objects: objs })
+          });
+          const data = await resp.json();
+
+          if (handleTouchAlert) {
+            handleTouchAlert.style.display = 'block';
+            handleTouchAlert.className = 'touch-alert-box';
+
+            if (data.action_status === 'BLOCKED_BY_SAFETY_VETO') {
+              handleTouchAlert.classList.add('touch-alert-critical');
+              handleTouchAlert.innerHTML = `
+                <strong>⛔ DOOR UNLATCH VETO ACTIVE!</strong><br>
+                ${data.message}<br>
+                <span style="font-size: 0.70rem; color: #7F1D1D; font-weight: 600;">Servo Locked at 0° • Buzzer Alert Sounded</span>
+              `;
+            } else if (data.action_status === 'UNLATCHED_WITH_WARNING') {
+              handleTouchAlert.classList.add('touch-alert-warning');
+              handleTouchAlert.innerHTML = `
+                <strong>⚠️ UNLATCHED WITH ADVISORY ALERT</strong><br>
+                ${data.message}<br>
+                <span style="font-size: 0.70rem; color: #78350F; font-weight: 600;">Servo at 90° • Advisory Chime Active</span>
+              `;
+            } else {
+              handleTouchAlert.classList.add('touch-alert-safe');
+              handleTouchAlert.innerHTML = `
+                <strong>✅ DOOR UNLATCHED</strong><br>
+                ${data.message}<br>
+                <span style="font-size: 0.70rem; color: #064E3B; font-weight: 600;">Servo at 90° • Road Corridor Clear</span>
+              `;
+            }
+          }
+        } catch (err) {
+          console.error("Handle touch error:", err);
+        } finally {
+          btnHandleTouch.disabled = false;
+        }
+      });
+    }
+
+    if (btnResetSafety) {
+      btnResetSafety.addEventListener('click', async () => {
+        try {
+          await fetch('/api/safety/reset', { method: 'POST' });
+          if (handleTouchAlert) handleTouchAlert.style.display = 'none';
+          const curTime = mainVideoPlayer ? mainVideoPlayer.currentTime : 0;
+          updateLiveMetricsFromFrame(findClosestFrame(curTime));
+        } catch (err) {
+          console.error("Safety reset error:", err);
+        }
+      });
+    }
+
+    // Phase 4: IoT Controller & MQTT Telemetry Poller
+    const mqttNavBadge = document.getElementById('mqttNavBadge');
+    const mqttNavText = document.getElementById('mqttNavText');
+    const mqttBrokerText = document.getElementById('mqttBrokerText');
+    const mqttThroughputText = document.getElementById('mqttThroughputText');
+    const esp32EcuText = document.getElementById('esp32EcuText');
+    const mqttLogViewer = document.getElementById('mqttLogViewer');
+    const mqttPacketCountText = document.getElementById('mqttPacketCountText');
+    const btnSimulateEspTouch = document.getElementById('btnSimulateEspTouch');
+    const btnSimulateRadar = document.getElementById('btnSimulateRadar');
+
+    async function pollIoTStatus() {
+      try {
+        const res = await fetch('/api/iot/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        const gateway = data.mqtt_gateway || {};
+        const esp32 = data.esp32_hardware || {};
+
+        if (mqttNavText && mqttNavBadge) {
+          if (gateway.is_connected) {
+            mqttNavText.innerText = `MQTT: ${gateway.broker_host} (ONLINE)`;
+            mqttNavBadge.style.background = '#F0FDF4';
+            mqttNavBadge.style.color = '#166534';
+            mqttNavBadge.style.borderColor = '#BBF7D0';
+          } else {
+            mqttNavText.innerText = `MQTT: ${gateway.broker_host} (Connecting...)`;
+            mqttNavBadge.style.background = '#FFFBEB';
+            mqttNavBadge.style.color = '#B45309';
+            mqttNavBadge.style.borderColor = '#FCD34D';
+          }
+        }
+
+        if (mqttBrokerText) {
+          mqttBrokerText.innerText = `${gateway.broker_host}:${gateway.broker_port}`;
+        }
+        if (mqttThroughputText) {
+          mqttThroughputText.innerText = `Published: ${gateway.messages_published || 0} | Received: ${gateway.messages_received || 0}`;
+        }
+        if (esp32EcuText) {
+          if (esp32.online) {
+            esp32EcuText.innerText = 'esp32_driver_door (CONNECTED)';
+            esp32EcuText.style.color = '#10B981';
+          } else {
+            esp32EcuText.innerText = 'esp32_driver_door (STANDBY / SIM)';
+            esp32EcuText.style.color = '#0284C7';
+          }
+        }
+
+        if (mqttLogViewer && gateway.recent_messages) {
+          const msgs = gateway.recent_messages;
+          if (mqttPacketCountText) {
+            mqttPacketCountText.innerText = `${msgs.length} packets buffered`;
+          }
+          if (msgs.length > 0) {
+            let logHtml = '';
+            msgs.slice().reverse().forEach(m => {
+              const dirColor = m.direction === 'IN' ? '#38BDF8' : '#34D399';
+              const arrow = m.direction === 'IN' ? '◀ IN' : '▶ OUT';
+              const timeStr = new Date(m.timestamp * 1000).toLocaleTimeString();
+              const payloadStr = JSON.stringify(m.payload);
+              logHtml += `<div><span style="color: #64748B;">[${timeStr}]</span> <strong style="color: ${dirColor};">${arrow}</strong> <span style="color: #F8FAFC; font-weight: 600;">${m.topic}</span>: <span style="color: #CBD5E1;">${payloadStr}</span></div>`;
+            });
+            mqttLogViewer.innerHTML = logHtml;
+          }
+        }
+      } catch (err) {
+        console.debug('IoT poll error:', err);
+      }
+    }
+
+    if (btnSimulateEspTouch) {
+      btnSimulateEspTouch.addEventListener('click', async () => {
+        try {
+          btnSimulateEspTouch.disabled = true;
+          const res = await fetch('/api/iot/simulate-touch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ touched: true })
+          });
+          const data = await res.json();
+          pollIoTStatus();
+          updateSafetyUI(data.safety_state, data.servo_angle_deg, data.servo_angle_deg === 0);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          btnSimulateEspTouch.disabled = false;
+        }
+      });
+    }
+
+    if (btnSimulateRadar) {
+      btnSimulateRadar.addEventListener('click', async () => {
+        try {
+          btnSimulateRadar.disabled = true;
+          await fetch('/api/iot/simulate-radar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ distance_cm: 140.0, relative_speed_mps: -3.5 })
+          });
+          pollIoTStatus();
+        } catch (e) {
+          console.error(e);
+        } finally {
+          btnSimulateRadar.disabled = false;
+        }
+      });
+    }
+
     // Start
     checkHealth();
     loadSamples();
     loadExistingJobs(true);
+    pollIoTStatus();
+    setInterval(pollIoTStatus, 2500);
   </script>
 </body>
 </html>

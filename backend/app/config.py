@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DEBUG: bool = True
     
+    # IoT MQTT Broker Configuration (Phase 4)
+    MQTT_ENABLED: bool = True
+    MQTT_BROKER_HOST: str = "broker.emqx.io"
+    MQTT_BROKER_PORT: int = 1883
+    MQTT_CLIENT_ID: str = "doorsafe_backend_gateway"
+    MQTT_KEEPALIVE: int = 60
+    MQTT_TOPIC_PREFIX: str = "doorsafe"
+    
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
 # Instantiate singleton settings

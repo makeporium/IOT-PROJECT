@@ -25,5 +25,19 @@ This folder contains in-depth, plain-English documentation detailing the complet
 * Why naively dividing distance by speed is dangerous and how 2D door corridor intersection works.
 * Alpha-Beta velocity filtering and forward trajectory prediction.
 
-### 4. [Phase 1 Technical Specification & Verification Summary](file:///c:/Users/astro/Desktop/College%20Ayush/IOT/IOT%20PROJECT/docs/PHASE_1_SUMMARY.md)
+### 4. [Phase 3 Guide: Deterministic Safety Decision Engine & Actuator Veto](file:///c:/Users/astro/Desktop/College%20Ayush/IOT/IOT%20PROJECT/docs/system_architecture_guide/04_PHASE_3_SAFETY_DECISION_ENGINE.md)
+* The Deterministic Veto Principle: why safety overrides probabilistic machine learning.
+* 2D Door Danger Zone polygon geometry ($X \in [-2.20, -0.70]\text{ m}$, $Y \in [-0.80, 2.20]\text{ m}$) with dynamic closing speed expansion.
+* Trajectory corridor intersection window $[t_{\text{enter}}, t_{\text{exit}}]$.
+* Measurement uncertainty guardrail ($\sigma_Y > 3.5\text{ m}$) and anti-chatter release hysteresis hold (1.0s).
+* Virtual servo actuator control ($0^\circ = \text{LOCKED}$, $90^\circ = \text{UNLATCHED}$) and passenger capacitive touch interception.
+
+### 5. [Phase 4 Guide: IoT Controller, ESP32, Wokwi & MQTT Actuation](file:///c:/Users/astro/Desktop/College%20Ayush/IOT/IOT%20PROJECT/docs/system_architecture_guide/05_PHASE_4_ESP32_WOKWI_MQTT.md)
+* Why MQTT is the standard automotive telemetry bus (pub/sub, tiny packet overhead, Last Will and Testament fail-safe).
+* Topic hierarchy (`actuator/command`, `sensor/touch`, `sensor/radar`, `system/heartbeat`).
+* Hardware circuit schematic & pinout for ESP32 DevKit v1, SG90 servo ($0^\circ \leftrightarrow 90^\circ$), capacitive touch grip, buzzer chime, and RGB LED.
+* Production C++ firmware design with non-blocking FreeRTOS timers.
+* How to run the browser simulation in Wokwi with a single click.
+
+### 6. [Phase 1 Technical Specification & Verification Summary](file:///c:/Users/astro/Desktop/College%20Ayush/IOT/IOT%20PROJECT/docs/PHASE_1_SUMMARY.md)
 * Technical details, API schemas, test results, and command references for Phase 1.

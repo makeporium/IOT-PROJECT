@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "author": "DOORSAFE Automotive Team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -120,
+      "left": 280,
+      "attrs": { "hornColor": "red" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_touch",
+      "top": 180,
+      "left": -120,
+      "attrs": { "color": "blue", "label": "Capacitive Touch Handle" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 180,
+      "left": 280,
+      "attrs": { "volume": "0.2" }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb_led",
+      "top": -100,
+      "left": -120,
+      "attrs": { "common": "cathode" }
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "radar",
+      "top": -160,
+      "left": 80,
+      "attrs": { "distance": "80" }
+    }
+  ],
+  "connections": [
+    [ "esp:GND.1", "servo1:GND", "black", [ "v0" ] ],
+    [ "esp:5V", "servo1:V+", "red", [ "v0" ] ],
+    [ "esp:13", "servo1:PWM", "orange", [ "v0" ] ],
+    [ "esp:GND.2", "btn_touch:1.l", "black", [ "v0" ] ],
+    [ "esp:4", "btn_touch:2.l", "blue", [ "v0" ] ],
+    [ "esp:GND.1", "buzzer:2", "black", [ "v0" ] ],
+    [ "esp:14", "buzzer:1", "purple", [ "v0" ] ],
+    [ "esp:GND.2", "rgb_led:COM", "black", [ "v0" ] ],
+    [ "esp:25", "rgb_led:R", "red", [ "v0" ] ],
+    [ "esp:26", "rgb_led:G", "green", [ "v0" ] ],
+    [ "esp:27", "rgb_led:B", "blue", [ "v0" ] ],
+    [ "esp:5V", "radar:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "radar:GND", "black", [ "v0" ] ],
+    [ "esp:5", "radar:TRIG", "cyan", [ "v0" ] ],
+    [ "esp:18", "radar:ECHO", "yellow", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
