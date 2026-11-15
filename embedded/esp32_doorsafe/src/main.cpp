@@ -37,11 +37,12 @@ const int   MQTT_PORT     = 1883;
 const char* DEVICE_ID     = "esp32_driver_door";
 
 // MQTT Automotive Topic Hierarchy
-const char* TOPIC_ACTUATOR_COMMAND = "doorsafe/actuator/command";
-const char* TOPIC_HAZARD_TELEMETRY = "doorsafe/telemetry/hazard";
-const char* TOPIC_TOUCH            = "doorsafe/sensor/touch";
-const char* TOPIC_RADAR            = "doorsafe/sensor/radar";
-const char* TOPIC_HEARTBEAT        = "doorsafe/system/heartbeat";
+const char* TOPIC_ACTUATOR_COMMAND = "doorsafe/ayush/vehicle_door_demo_v2/actuator/command";
+const char* TOPIC_ACTUATOR_STATE   = "doorsafe/ayush/vehicle_door_demo_v2/actuator/state";
+const char* TOPIC_HAZARD_TELEMETRY = "doorsafe/ayush/vehicle_door_demo_v2/telemetry/hazard";
+const char* TOPIC_TOUCH            = "doorsafe/ayush/vehicle_door_demo_v2/sensor/touch";
+const char* TOPIC_RADAR            = "doorsafe/ayush/vehicle_door_demo_v2/sensor/radar";
+const char* TOPIC_HEARTBEAT        = "doorsafe/ayush/vehicle_door_demo_v2/system/heartbeat";
 
 // ==========================================
 // 3. GLOBAL OBJECTS & STATE
@@ -51,8 +52,8 @@ PubSubClient mqttClient(espClient);
 Servo doorServo;
 
 // Actuator & State Variables
-int  currentServoAngle = 90; // Default 90 deg (Unlatched / Free)
-bool isDoorLocked      = false;
+int  currentServoAngle = 0; // Fail-safe boot position
+bool isDoorLocked      = true;
 bool buzzerActive      = false;
 unsigned long buzzerStartTime = 0;
 
@@ -61,6 +62,32 @@ unsigned long lastRadarSampleTime = 0;
 unsigned long lastHeartbeatTime   = 0;
 unsigned long lastMqttRetryTime   = 0;
 bool lastTouchState = false;
+unsigned long lastMqttConnectedTime = 0;
+unsigned long lastAppliedSequence = 0;
+String lastCommandSession = "";
+
+void publishActuatorState(
+    const char* commandId,
+    const char* sessionId,
+    unsigned long sequence,
+    int requestedAngle,
+    const char* status
+) {
+    if (!mqttClient.connected()) return;
+    StaticJsonDocument<256> doc;
+    doc["device_id"] = DEVICE_ID;
+    doc["timestamp"] = millis() / 1000.0;
+    doc["command_id"] = commandId;
+    doc["session_id"] = sessionId;
+    doc["sequence"] = sequence;
+    doc["requested_angle_deg"] = requestedAngle;
+    doc["applied_angle_deg"] = currentServoAngle;
+    doc["door_locked"] = isDoorLocked;
+    doc["status"] = status;
+    char buffer[256];
+    serializeJson(doc, buffer);
+    mqttClient.publish(TOPIC_ACTUATOR_STATE, buffer, false);
+}
 
 // ==========================================
 // 4. ACTUATOR & INDICATOR CONTROLLERS
@@ -111,12 +138,28 @@ void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {
             int angle = doc["servo_angle_deg"] | 90;
             bool locked = doc["door_locked"] | false;
             bool chime = doc["chime_alert"] | false;
+            const char* commandId = doc["command_id"] | "missing-command-id";
+            const char* sessionId = doc["session_id"] | "missing-session-id";
+            unsigned long sequence = doc["sequence"] | 0;
+
+            if (lastCommandSession != String(sessionId)) {
+                lastCommandSession = String(sessionId);
+                lastAppliedSequence = 0;
+            }
+
+            if (sequence == 0 || sequence <= lastAppliedSequence) {
+                Serial.printf("[ACTUATOR] Rejected stale command sequence %lu\n", sequence);
+                publishActuatorState(commandId, sessionId, sequence, angle, "REJECTED");
+                return;
+            }
 
             Serial.printf("[ACTUATOR] Target Angle: %d deg | Locked: %s | Chime: %s\n",
                           angle, locked ? "YES" : "NO", chime ? "YES" : "NO");
 
             // Zero-latency physical hardware actuation
             setDoorLockActuator(angle, locked, chime);
+            lastAppliedSequence = sequence;
+            publishActuatorState(commandId, sessionId, sequence, angle, "APPLIED");
         }
     }
 }
@@ -146,18 +189,19 @@ void pollCapacitiveTouchSensor() {
     if (isTouched != lastTouchState) {
         lastTouchState = isTouched;
 
-        if (isTouched) {
-            Serial.println("[SENSOR] Capacitive Handle Touch Detected! Publishing to MQTT...");
+        {
+            Serial.printf("[SENSOR] Capacitive Handle state: %s\n", isTouched ? "TOUCHED" : "RELEASED");
             
             StaticJsonDocument<256> doc;
             doc["device_id"] = DEVICE_ID;
             doc["timestamp"] = millis() / 1000.0;
-            doc["touched"] = true;
-            doc["raw_capacitive_val"] = 15; // Simulated raw ADC value
+            doc["touched"] = isTouched;
+            doc["raw_capacitive_val"] = isTouched ? 15 : 85;
 
             char buffer[256];
             serializeJson(doc, buffer);
-            mqttClient.publish(TOPIC_TOUCH, buffer, true);
+            // Touch is an edge event and must never be retained.
+            mqttClient.publish(TOPIC_TOUCH, buffer, false);
         }
     }
 }
@@ -215,6 +259,7 @@ void connectMQTT() {
         // Emit initial online announcement
         StaticJsonDocument<192> bootDoc;
         bootDoc["device_id"] = DEVICE_ID;
+        bootDoc["timestamp"] = millis() / 1000.0;
         bootDoc["status"] = "ONLINE";
         bootDoc["uptime_seconds"] = millis() / 1000;
         bootDoc["firmware_version"] = "1.0.0";
@@ -222,6 +267,7 @@ void connectMQTT() {
         char bootBuf[192];
         serializeJson(bootDoc, bootBuf);
         mqttClient.publish(TOPIC_HEARTBEAT, bootBuf);
+        lastMqttConnectedTime = millis();
     } else {
         Serial.printf("[MQTT] Connection failed, rc=%d. Will retry.\n", mqttClient.state());
     }
@@ -253,8 +299,8 @@ void setup() {
     doorServo.setPeriodHertz(50);
     doorServo.attach(PIN_SERVO, 500, 2400); // 500us to 2400us pulses
 
-    // Default to unlatched 90 deg position
-    setDoorLockActuator(90, false, false);
+    // Fail-safe default: remain locked until a fresh validated command arrives.
+    setDoorLockActuator(0, true, false);
 
     // Setup WiFi & MQTT
     connectWiFi();
@@ -270,7 +316,14 @@ void loop() {
             connectMQTT();
         } else {
             mqttClient.loop();
+            lastMqttConnectedTime = millis();
         }
+    }
+
+    // Communication watchdog: loss of the command bus always returns to lock.
+    if (!mqttClient.connected() && millis() - lastMqttConnectedTime > 2000 && !isDoorLocked) {
+        setDoorLockActuator(0, true, true);
+        Serial.println("[FAIL-SAFE] MQTT unavailable: door lock engaged.");
     }
 
     // 2. Poll capacitive handle touch sensor
@@ -307,6 +360,7 @@ void loop() {
         if (mqttClient.connected()) {
             StaticJsonDocument<192> hbDoc;
             hbDoc["device_id"] = DEVICE_ID;
+            hbDoc["timestamp"] = now / 1000.0;
             hbDoc["status"] = isDoorLocked ? "CRITICAL_LOCK" : "ONLINE";
             hbDoc["uptime_seconds"] = now / 1000;
             hbDoc["free_heap_bytes"] = ESP.getFreeHeap();

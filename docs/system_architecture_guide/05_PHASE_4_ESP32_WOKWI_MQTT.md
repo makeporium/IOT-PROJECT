@@ -1,6 +1,6 @@
 # Phase 4 Explained: IoT Controller, ESP32, Wokwi & MQTT Actuation
 
-> **A Senior Developer's Guide to Automotive Microcontrollers, FreeRTOS Firmware, Hardware PWM Servos, and MQTT IoT Telemetry**
+> **Engineering guide to ESP32 firmware, hardware PWM servos, and MQTT telemetry**
 > 
 > *Written in plain language for engineers, evaluators, and reviewers.*
 
@@ -19,10 +19,10 @@ However, **a car is not a laptop**. In a real automobile:
 3. The central computer and the door ECU must communicate over a **fast, decoupled automotive telemetry bus**.
 
 **Phase 4 brings the embedded hardware to life:**
-- We build real, production-ready C++ firmware for the **ESP32 DevKit v1** microcontroller.
+- We build academic prototype C++ firmware for the **ESP32 DevKit v1** microcontroller.
 - We integrate a full **MQTT Automotive Telemetry Gateway** connecting Python and embedded C++.
 - We simulate the entire physical circuit in **Wokwi** (with an SG90 servo actuator, capacitive touch handle, piezo buzzer, RGB LED, and ultrasonic radar).
-- When a hazard approaches, the backend dispatches a packet across the internet/local bus, and the ESP32 physically rotates the servo to $0^\circ$ (**LOCK ENGAGED**) and sounds the warning chime in under $15\text{ ms}$.
+- When a hazard approaches, the backend dispatches a sequenced command, the ESP32 rotates the servo to $0^\circ$ (**LOCK ENGAGED**), and the controller publishes the applied position as an acknowledgement.
 
 ---
 
@@ -49,12 +49,14 @@ In automotive embedded systems, standard HTTP has major fatal flaws:
                                       │
             ┌─────────────────────────┼─────────────────────────┐
             ▼                         ▼                         ▼
-   doorsafe/actuator/command   doorsafe/sensor/touch   doorsafe/system/heartbeat
+   .../actuator/command        .../sensor/touch        .../system/heartbeat
    (Backend -> ESP32)          (ESP32 -> Backend)      (Bidirectional Health)
    Servo: 0° or 90°            Touched: true/false     Status: ONLINE / OFFLINE
 ```
 
-### 3.1 Actuator Command (`doorsafe/actuator/command`)
+All topics use the configurable project namespace `doorsafe/college_ayush/v1` by default.
+
+### 3.1 Actuator Command (`.../actuator/command`)
 Published by the backend safety engine; consumed by the ESP32:
 ```json
 {
@@ -63,11 +65,31 @@ Published by the backend safety engine; consumed by the ESP32:
   "servo_angle_deg": 0,
   "door_locked": true,
   "chime_alert": true,
-  "reason": "Imminent cyclist collision (TTC: 0.8s)"
+  "reason": "Imminent cyclist collision (TTC: 0.8s)",
+  "command_id": "7a1d...",
+  "session_id": "backend-boot-session...",
+  "sequence": 42,
+  "ttl_ms": 1500,
+  "source_mode": "RECORDED_DEMO"
 }
 ```
 
-### 3.2 Capacitive Handle Touch (`doorsafe/sensor/touch`)
+### 3.2 Actuator Acknowledgement (`.../actuator/state`)
+```json
+{
+  "device_id": "esp32_driver_door",
+  "timestamp": 120.4,
+  "command_id": "7a1d...",
+  "session_id": "backend-boot-session...",
+  "sequence": 42,
+  "requested_angle_deg": 0,
+  "applied_angle_deg": 0,
+  "door_locked": true,
+  "status": "APPLIED"
+}
+```
+
+### 3.3 Capacitive Handle Touch (`.../sensor/touch`)
 Published by the ESP32 whenever a passenger touches the door handle:
 ```json
 {
@@ -78,7 +100,7 @@ Published by the ESP32 whenever a passenger touches the door handle:
 }
 ```
 
-### 3.3 Rear Radar Echo (`doorsafe/sensor/radar`)
+### 3.4 Rear Radar Echo (`.../sensor/radar`)
 Published by the ESP32 rear sensor module:
 ```json
 {
@@ -90,7 +112,7 @@ Published by the ESP32 rear sensor module:
 }
 ```
 
-### 3.4 Node Heartbeat & Watchdog (`doorsafe/system/heartbeat`)
+### 3.5 Node Heartbeat & Watchdog (`.../system/heartbeat`)
 Emitted periodically every 10 seconds to prove controller vitality:
 ```json
 {
@@ -136,14 +158,13 @@ The circuit is designed for the **ESP32 DevKit v1** and simulated inside Wokwi:
 
 ## 5. Senior Developer Firmware Design Principles
 
-### 5.1 Zero-Blocking Execution (No `delay()`)
-In commercial automotive firmware, writing `delay(1000)` is forbidden because it freezes the processor. If an incoming critical collision packet arrives during a 1-second delay, the door would fail to lock.
-Our firmware uses **timestamp-based polling (`millis()`)**:
+### 5.1 Bounded Runtime Execution
+The steady-state control loop uses **timestamp-based polling (`millis()`)** for buzzer, radar, and heartbeat scheduling. The ultrasonic read remains bounded by a 35 ms timeout, and connection setup uses bounded retries. This is suitable for the academic simulator but is not an automotive production timing guarantee.
 - The MQTT network loop runs continuously on every cycle.
 - Buzzer durations (600ms), radar polling (500ms), and heartbeats (10s) operate as independent, non-blocking scheduled tasks.
 
 ### 5.2 Direct Hardware PWM Actuation
-When an MQTT packet arrives on `doorsafe/actuator/command`, the callback function executes immediately:
+When an MQTT packet arrives on the project-scoped actuator command topic, the callback executes immediately:
 ```cpp
 void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {
     // Zero-latency physical actuation
@@ -154,7 +175,19 @@ void onMqttMessageReceived(char* topic, byte* payload, unsigned int length) {
     }
 }
 ```
-The mechanical servo angle changes in under **$1\text{ ms}$** of packet arrival.
+The firmware applies commands in the MQTT callback and publishes the resulting state. Phase 9 will measure actual network, controller, and mechanical latency.
+
+### 5.3 Fail-Safe and Stale-Command Behavior
+- The ESP32 boots at the locked $0^\circ$ position.
+- Loss of MQTT for more than two seconds returns the servo to locked.
+- Commands carry monotonic sequence numbers; duplicate or older commands are rejected.
+- Touch events are edge events and are never retained by the broker.
+- Playback, radar, and handle requests update one authoritative backend safety manager.
+
+### 5.4 Animation and Model Ownership
+- Phase 4 owns the compact hardware-twin animation: controller status, touch state, radar value, and SG90 position.
+- This animation lives in the frontend presentation layer and consumes backend state plus `actuator/state` feedback.
+- Phase 6 owns the complete Three.js vehicle, road-user models, opening-door animation, danger zone, and sensor fields of view.
 
 ---
 

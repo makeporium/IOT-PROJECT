@@ -33,6 +33,8 @@ from app.api.routes_video import router as video_router
 from app.api.routes_calibration import router as calibration_router
 from app.api.routes_safety import router as safety_router
 from app.api.routes_iot import router as iot_router
+from app.api.routes_events import router as events_router
+from app.api.routes_twin import router as twin_router
 from app.api.routes_video import get_detector
 
 # Setup logging
@@ -59,6 +61,11 @@ async def lifespan(app: FastAPI):
         logger.info(f"YOLO detector successfully initialized on device: {det.device}")
     except Exception as e:
         logger.error(f"Failed to initialize YOLO model at startup: {e}")
+
+    # Phase 4: Start MQTT Automotive Gateway
+    from app.persistence.event_store import get_event_store
+    event_store = get_event_store()
+    logger.info("Phase 5 flight recorder ready: %s", event_store.database_path)
 
     # Phase 4: Start MQTT Automotive Gateway
     if getattr(settings, "MQTT_ENABLED", True):
@@ -108,6 +115,8 @@ app.include_router(video_router, prefix=settings.API_V1_STR)
 app.include_router(calibration_router, prefix=settings.API_V1_STR)
 app.include_router(safety_router, prefix=settings.API_V1_STR)
 app.include_router(iot_router, prefix=settings.API_V1_STR)
+app.include_router(events_router, prefix=settings.API_V1_STR)
+app.include_router(twin_router, prefix=settings.API_V1_STR)
 
 # Also expose under /api/v1 for standard REST client conventions
 if settings.API_V1_STR != "/api/v1":
@@ -116,6 +125,8 @@ if settings.API_V1_STR != "/api/v1":
     app.include_router(calibration_router, prefix="/api/v1")
     app.include_router(safety_router, prefix="/api/v1")
     app.include_router(iot_router, prefix="/api/v1")
+    app.include_router(events_router, prefix="/api/v1")
+    app.include_router(twin_router, prefix="/api/v1")
 
 # Mount static web UI, sample videos, and processed outputs
 static_dir = Path(__file__).resolve().parent / "app" / "static"

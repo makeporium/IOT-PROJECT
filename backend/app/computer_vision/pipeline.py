@@ -244,12 +244,9 @@ class VideoProcessingPipeline:
                     frame_timestamp_s=timestamp_sec
                 )
 
-                # Phase 4: Broadcast to IoT MQTT Automotive Bus
-                try:
-                    from app.iot.bridge import get_iot_bridge
-                    get_iot_bridge().sync_safety_state(safety_res)
-                except Exception:
-                    pass
+                # Phase 4 deliberately does not actuate from the batch processor.
+                # Recorded telemetry is synchronized to IoT only while the user
+                # plays the corresponding frame in the dashboard.
 
                 # 5. Annotate frame with Metric Overlays & Warnings
                 annotated_frame = self.annotator.annotate(

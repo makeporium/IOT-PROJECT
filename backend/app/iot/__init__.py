@@ -3,6 +3,7 @@
 from app.iot.topics import (
     MQTTTopics,
     ActuatorCommandPayload,
+    ActuatorStatePayload,
     HazardTelemetryPayload,
     TouchSensorPayload,
     RadarSensorPayload,
@@ -14,6 +15,7 @@ from app.iot.bridge import IoTBridge, get_iot_bridge
 __all__ = [
     "MQTTTopics",
     "ActuatorCommandPayload",
+    "ActuatorStatePayload",
     "HazardTelemetryPayload",
     "TouchSensorPayload",
     "RadarSensorPayload",

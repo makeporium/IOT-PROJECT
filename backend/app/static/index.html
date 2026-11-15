@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <style>
     :root {
       --bg-base: #0B0F19;
@@ -195,6 +196,13 @@
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+
+    .twin-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(290px, .8fr); gap: 1.25rem; }
+    .twin-viewport { height: 510px; background: radial-gradient(circle at 50% 35%, #172554, #080C14 70%); border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; position: relative; }
+    .twin-viewport canvas { width: 100%; height: 100%; display: block; }
+    .twin-legend { position: absolute; left: .85rem; bottom: .85rem; display: flex; gap: .45rem; flex-wrap: wrap; }
+    .twin-legend span { background: rgba(8,12,20,.82); border: 1px solid var(--border-subtle); border-radius: 5px; padding: .25rem .45rem; font: 600 .66rem 'JetBrains Mono', monospace; color: var(--text-secondary); }
+    @media (max-width: 900px) { .twin-layout { grid-template-columns: 1fr; } .twin-viewport { height: 420px; } }
 
     /* Cards */
     .card {
@@ -503,6 +511,12 @@
     <button class="nav-tab-btn" data-tab="tab-calibration">
       📐 Calibration & Diagnostics
     </button>
+    <button class="nav-tab-btn" data-tab="tab-recorder">
+      🗃️ Phase 5 Flight Recorder
+    </button>
+    <button class="nav-tab-btn" data-tab="tab-digital-twin">
+      🌐 Phase 6 Digital Twin
+    </button>
   </nav>
 
   <!-- Main View Area -->
@@ -727,6 +741,10 @@
             </button>
           </div>
 
+          <div id="hardwareRadarReadout" style="font-family: 'JetBrains Mono'; font-size: 0.75rem; border: 1px solid var(--border-subtle); border-radius: 7px; padding: 0.65rem; color: var(--text-muted);">
+            HC-SR04 DOOR-SIDE PROXIMITY: waiting for live sensor echo
+          </div>
+
           <!-- Wokwi Simulator Links -->
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
             <div style="font-size: 0.75rem; color: var(--text-muted);">
@@ -810,6 +828,61 @@
       </div>
     </div>
 
+    <!-- ========================================================
+         TAB 4: PHASE 5 VEHICLE FLIGHT RECORDER
+         ======================================================== -->
+    <div id="tab-recorder" class="tab-content">
+      <div class="card" style="margin-bottom: 1.25rem;">
+        <div class="card-title">
+          <span>Persistent Vehicle Safety Log</span>
+          <span id="recorderStorageMode" style="font-family: 'JetBrains Mono'; font-size: 0.72rem; color: var(--accent-cyan);">Connecting…</span>
+        </div>
+        <div class="telemetry-row">
+          <div class="stat-pill"><div class="stat-label">Recorded Events</div><div class="stat-value" id="recorderEventCount">--</div></div>
+          <div class="stat-pill"><div class="stat-label">Latest Event</div><div class="stat-value" id="recorderLatestEvent" style="font-size: 0.85rem;">--</div></div>
+          <div class="stat-pill"><div class="stat-label">Cloud Sync</div><div class="stat-value" id="recorderCloudStatus" style="font-size: 0.85rem; color: var(--status-safe);">Checking…</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>Recent Safety Evidence</span></div>
+        <div class="table-container" style="max-height: 420px; overflow-y: auto;">
+          <table>
+            <thead><tr><th>Time</th><th>Event</th><th>Source</th><th>Safety</th><th>Door</th><th>Evidence</th></tr></thead>
+            <tbody id="recorderEventsBody"><tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1rem;">Waiting for vehicle events…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         TAB 5: PHASE 6 GROUND-TRUTH DIGITAL TWIN
+         ======================================================== -->
+    <div id="tab-digital-twin" class="tab-content">
+      <div class="card" style="margin-bottom:1rem; border-color:rgba(34,211,238,.45); background:linear-gradient(90deg,rgba(8,47,73,.42),rgba(15,23,42,.72));">
+        <div style="display:flex; justify-content:space-between; gap:1rem; align-items:center; flex-wrap:wrap;"><div><div style="font-weight:800; color:var(--accent-cyan);">PHASE 6 — SIMULATION SANDBOX</div><div style="font-size:.78rem; color:var(--text-secondary); margin-top:.25rem;">This tab tests the same door-safety idea in a virtual road. It does <strong>not</strong> command your Wokwi servo. Your real demonstration remains: Video → FastAPI safety engine → MQTT → Wokwi.</div></div><span class="badge-pill" style="color:var(--accent-cyan);">VIRTUAL ONLY</span></div>
+      </div>
+      <div class="twin-layout">
+        <div class="card" style="padding: .75rem;">
+          <div class="card-title" style="padding: .25rem .25rem .75rem;"><span>Interactive 3D Road & Door-Swing Simulation</span><span id="twinClock" style="font:700 .72rem 'JetBrains Mono'; color:var(--accent-cyan);">T+0.00 s</span></div>
+          <div id="digitalTwinViewport" class="twin-viewport"><div class="twin-legend"><span>■ Parked vehicle</span><span style="color:#F87171">■ Door danger zone</span><span style="color:#38BDF8">■ Virtual radar FOV</span><span style="color:#FBBF24">■ Road participant</span></div></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div class="card"><div class="card-title"><span>Scenario Control</span></div>
+            <select id="twinScenarioSelect" class="select-input" style="width:100%; margin-bottom:.75rem;"></select>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem;"><button id="btnTwinPlay" class="btn btn-primary">▶ Play</button><button id="btnTwinReset" class="btn btn-secondary">↺ Reset</button></div>
+            <button id="btnTwinDoorRequest" class="btn btn-secondary" style="margin-top:.6rem;">🚪 Simulate Left Door Request</button>
+            <div style="font-size:.72rem; color:var(--text-muted); margin-top:.75rem; line-height:1.6;"><strong>Demo:</strong> choose <em>Safe adjacent-lane car</em> → request door → it opens. Choose <em>Fast motorcycle</em> → Play → it stops in red zone → request is vetoed.</div>
+          </div>
+          <div class="card"><div class="card-title"><span>Ground Truth vs Virtual Radar</span></div>
+            <div class="telemetry-row" style="grid-template-columns:1fr 1fr;"><div class="stat-pill"><div class="stat-label">True distance</div><div id="twinTrueDistance" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">Radar reading</div><div id="twinRadarDistance" class="stat-value" style="color:var(--accent-cyan);">--</div></div></div>
+            <div class="telemetry-row" style="grid-template-columns:1fr 1fr; margin-top:.7rem;"><div class="stat-pill"><div class="stat-label">True TTC</div><div id="twinTrueTtc" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">Radar error</div><div id="twinRadarError" class="stat-value">--</div></div></div>
+          </div>
+          <div class="card"><div class="card-title"><span>Why this matters</span></div><p id="twinScenarioInfo" style="font-size:.78rem; color:var(--text-secondary); line-height:1.55;">Loading a reproducible scenario…</p></div>
+          <div class="card"><div class="card-title"><span>Virtual Left-Door Actuator</span></div><div id="twinSafetyState" style="font:800 1rem 'JetBrains Mono'; color:var(--status-safe);">SAFE — corridor clear</div><div id="twinDoorState" style="font-size:.76rem; color:var(--text-muted); margin-top:.35rem;">LEFT DOOR: LOCKED</div><div id="twinActionResult" style="font-size:.72rem; color:var(--text-secondary); margin-top:.6rem; line-height:1.45;">Waiting for a simulated door request.</div></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
@@ -822,6 +895,12 @@
     let animationFrameId = null;
     let selectedJobId = null;
     let isActuatorLocked = false;
+    let lastIoTSyncAt = 0;
+    let lastSyncedFrameIndex = -1;
+    // This is the live decision returned by the backend for the exact frame
+    // on screen. Do not trust the historic `frame.safety` field: it belongs
+    // to the original analysis run and may predate a rule/calibration change.
+    let liveFrameSafety = null;
 
     // Elements
     const sampleSelect = document.getElementById('sampleVideoSelect');
@@ -855,6 +934,7 @@
     const bevCanvas = document.getElementById('bevCanvas');
     const bevCtx = bevCanvas.getContext('2d');
     const feedbackBanner = document.getElementById('feedbackBanner');
+    const mqttHeaderBadge = document.getElementById('mqttHeaderBadge');
 
     // Header & Hardware Twin Elements
     const masterHudDot = document.getElementById('masterHudDot');
@@ -873,6 +953,26 @@
     const btnManualUnlock = document.getElementById('btnManualUnlock');
     const btnSimRadarClose = document.getElementById('btnSimRadarClose');
     const btnSimRadarClear = document.getElementById('btnSimRadarClear');
+    const hardwareRadarReadout = document.getElementById('hardwareRadarReadout');
+    const recorderStorageMode = document.getElementById('recorderStorageMode');
+    const recorderEventCount = document.getElementById('recorderEventCount');
+    const recorderLatestEvent = document.getElementById('recorderLatestEvent');
+    const recorderEventsBody = document.getElementById('recorderEventsBody');
+    const recorderCloudStatus = document.getElementById('recorderCloudStatus');
+    const twinViewport = document.getElementById('digitalTwinViewport');
+    const twinScenarioSelect = document.getElementById('twinScenarioSelect');
+    const btnTwinPlay = document.getElementById('btnTwinPlay');
+    const btnTwinReset = document.getElementById('btnTwinReset');
+    const twinClock = document.getElementById('twinClock');
+    const twinTrueDistance = document.getElementById('twinTrueDistance');
+    const twinRadarDistance = document.getElementById('twinRadarDistance');
+    const twinTrueTtc = document.getElementById('twinTrueTtc');
+    const twinRadarError = document.getElementById('twinRadarError');
+    const twinScenarioInfo = document.getElementById('twinScenarioInfo');
+    const twinSafetyState = document.getElementById('twinSafetyState');
+    const twinDoorState = document.getElementById('twinDoorState');
+    const btnTwinDoorRequest = document.getElementById('btnTwinDoorRequest');
+    const twinActionResult = document.getElementById('twinActionResult');
 
     // Navigation Tabs
     document.querySelectorAll('.nav-tab-btn').forEach(btn => {
@@ -882,6 +982,7 @@
         btn.classList.add('active');
         const targetId = btn.getAttribute('data-tab');
         document.getElementById(targetId).classList.add('active');
+        if (targetId === 'tab-digital-twin') initializeDigitalTwin();
       });
     });
 
@@ -1072,14 +1173,17 @@
       twinCapacitiveMeter.style.background = 'rgba(239, 68, 68, 0.2)';
 
       try {
-        const resp = await fetch('/api/safety/handle-touch', {
+        // Evaluate the exact displayed frame and the handle request together.
+        // This removes a complete browser -> backend round trip while keeping
+        // the safety decision authoritative for a paused/scrubbed video.
+        const resp = await fetch('/api/iot/simulate-touch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ touched: true, objects: activeObjs })
         });
         const data = await resp.json();
 
-        const isLocked = (data.door_locked === true || data.servo_angle_deg === 0);
+        const isLocked = (data.servo_angle_deg === 0);
         const msg = isLocked
           ? `<strong>⛔ DOOR UNLATCH VETO ACTIVE!</strong><br>${data.message}`
           : `<strong>✅ DOOR UNLATCHED</strong><br>${data.message}`;
@@ -1101,8 +1205,23 @@
     btnQuickTouch.addEventListener('click', triggerDoorTouch);
     interactiveDoorHandle.addEventListener('click', triggerDoorTouch);
 
-    btnManualLock.addEventListener('click', () => setActuatorVisuals(0, true, 'Manual 0° lock command engaged.'));
-    btnManualUnlock.addEventListener('click', () => setActuatorVisuals(90, false, 'Manual 90° unlatch command engaged.'));
+    async function requestManualActuator(action) {
+      const resp = await fetch('/api/iot/manual-actuator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const data = await resp.json();
+      setActuatorVisuals(
+        data.servo_angle_deg,
+        data.door_locked,
+        data.message || `${action} command ${data.accepted ? 'accepted' : 'blocked by safety'}.`
+      );
+      pollIoTStatus();
+    }
+
+    btnManualLock.addEventListener('click', () => requestManualActuator('LOCK'));
+    btnManualUnlock.addEventListener('click', () => requestManualActuator('UNLOCK'));
 
     btnSimRadarClose.addEventListener('click', async () => {
       await fetch('/api/iot/simulate-radar', {
@@ -1144,6 +1263,34 @@
       if (frame) {
         renderBEVFrame(frame);
         updateLiveTargetsFromFrame(frame);
+        const now = performance.now();
+        // Synchronize once whenever the displayed frame changes, whether the
+        // video is playing, paused, or scrubbed. The frame-index guard prevents
+        // repeated MQTT commands and terminal clutter while paused.
+        if (now - lastIoTSyncAt >= 250 && frame.frame_index !== lastSyncedFrameIndex) {
+          lastIoTSyncAt = now;
+          lastSyncedFrameIndex = frame.frame_index;
+          liveFrameSafety = null;
+          fetch('/api/iot/sync-observation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timestamp_sec: frame.timestamp_sec || curTime,
+              objects: frame.objects || [],
+              source_mode: 'RECORDED_DEMO'
+            })
+          })
+            .then(res => res.ok ? res.json() : Promise.reject(new Error(`Safety sync failed (${res.status})`)))
+            .then(decision => {
+              // Ignore a delayed response for a frame the user has already
+              // scrubbed past. This prevents an old danger verdict flashing
+              // over a newer clear frame.
+              if (lastSyncedFrameIndex !== frame.frame_index) return;
+              liveFrameSafety = decision;
+              setActuatorVisuals(decision.servo_angle_deg, decision.door_locked);
+            })
+            .catch(err => console.debug('IoT frame sync error:', err));
+        }
       }
     }
 
@@ -1168,7 +1315,9 @@
         hazardMetric.innerText = '0';
         hazardMetric.style.color = 'var(--status-safe)';
         ttcMetric.innerText = '--';
-        setActuatorVisuals(90, false);
+        if (liveFrameSafety) {
+          setActuatorVisuals(liveFrameSafety.servo_angle_deg, liveFrameSafety.door_locked);
+        }
         return;
       }
 
@@ -1188,13 +1337,10 @@
       hazardMetric.style.color = frameMaxUrgency === 'CRITICAL' ? 'var(--status-critical)' : (frameMaxUrgency === 'WARNING' ? 'var(--status-warning)' : 'var(--status-safe)');
       ttcMetric.innerText = frameMinTTC < Infinity ? `${frameMinTTC.toFixed(1)}s` : '--';
 
-      // Update Actuator & Veto HUD
-      if (frame.safety) {
-        setActuatorVisuals(frame.safety.servo_angle_deg, frame.safety.is_door_locked);
-      } else if (frameMaxUrgency === 'CRITICAL') {
-        setActuatorVisuals(0, true);
-      } else {
-        setActuatorVisuals(90, false);
+      // Update the HUD only from the live backend decision. The cached safety
+      // result embedded in the processed video is illustrative, not authority.
+      if (liveFrameSafety) {
+        setActuatorVisuals(liveFrameSafety.servo_angle_deg, liveFrameSafety.door_locked);
       }
     }
 
@@ -1310,9 +1456,43 @@
         if (!res.ok) return;
         const data = await res.json();
         const gateway = data.mqtt_gateway || {};
+        const safety = data.safety || {};
+        const feedback = data.actuator_feedback;
+        const requestedActuator = data.requested_actuator;
+        const radar = (data.esp32_hardware || {}).last_radar_reading;
 
         if (mqttThroughputLabel) {
           mqttThroughputLabel.innerText = `Broker: ${gateway.broker_host}:${gateway.broker_port} • Pub: ${gateway.messages_published || 0} | Recv: ${gateway.messages_received || 0}`;
+        }
+
+        if (mqttHeaderBadge) {
+          const online = gateway.is_connected === true;
+          mqttHeaderBadge.innerHTML = `<span style="color: ${online ? 'var(--status-safe)' : 'var(--status-critical)'};">●</span> MQTT: ${online ? 'ONLINE' : 'OFFLINE'}`;
+        }
+
+        if (hardwareRadarReadout) {
+          if (!radar) {
+            hardwareRadarReadout.innerText = 'HC-SR04 DOOR-SIDE PROXIMITY: waiting for live sensor echo';
+            hardwareRadarReadout.style.color = 'var(--text-muted)';
+          } else {
+            const live = (Date.now() / 1000 - (radar.received_at || 0)) <= 2;
+            const mode = radar.interlock_active && live ? 'VETO — object inside 1.20 m beam' : (live ? 'CLEAR — no close object' : 'STALE — awaiting new echo');
+            hardwareRadarReadout.innerText = `HC-SR04 DOOR-SIDE PROXIMITY: ${radar.distance_m.toFixed(2)} m • ${mode}`;
+            hardwareRadarReadout.style.color = radar.interlock_active && live ? 'var(--status-critical)' : (live ? 'var(--status-safe)' : 'var(--text-muted)');
+          }
+        }
+
+        // Hardware feedback is authoritative. Until Wokwi acknowledges a command,
+        // show the backend safety decision as the requested state.
+        if (feedback && (!requestedActuator || (
+          feedback.session_id === requestedActuator.session_id &&
+          feedback.sequence >= requestedActuator.sequence
+        ))) {
+          setActuatorVisuals(feedback.applied_angle_deg, feedback.door_locked);
+        } else if (requestedActuator) {
+          setActuatorVisuals(requestedActuator.servo_angle_deg, requestedActuator.door_locked);
+        } else if (typeof safety.servo_angle_deg === 'number') {
+          setActuatorVisuals(safety.servo_angle_deg, safety.door_locked);
         }
 
         if (mqttTerminalViewer && gateway.recent_messages) {
@@ -1333,6 +1513,99 @@
         console.debug('IoT poll error:', err);
       }
     }
+
+    async function pollFlightRecorder() {
+      try {
+        const [summaryRes, eventsRes] = await Promise.all([
+          fetch('/api/events/summary'), fetch('/api/events?limit=30')
+        ]);
+        if (!summaryRes.ok || !eventsRes.ok) return;
+        const summary = await summaryRes.json();
+        const events = (await eventsRes.json()).events || [];
+        recorderStorageMode.innerText = summary.storage_mode || 'LOCAL_SQLITE';
+        recorderEventCount.innerText = summary.total_events ?? 0;
+        recorderLatestEvent.innerText = summary.latest_event_at
+          ? new Date(summary.latest_event_at * 1000).toLocaleTimeString() : '--';
+        const cloud = summary.supabase || {};
+        if (cloud.enabled && !cloud.last_error) {
+          recorderCloudStatus.innerText = `Supabase ✓ (${cloud.synced_events || 0})`;
+          recorderCloudStatus.style.color = 'var(--status-safe)';
+        } else if (cloud.enabled) {
+          recorderCloudStatus.innerText = 'Supabase retrying';
+          recorderCloudStatus.style.color = 'var(--status-warning)';
+        } else {
+          recorderCloudStatus.innerText = 'Local SQLite only';
+          recorderCloudStatus.style.color = 'var(--text-muted)';
+        }
+        if (!events.length) return;
+        recorderEventsBody.innerHTML = events.map(event => {
+          const evidence = event.payload.reason || event.payload.message || event.payload.distance_m || event.payload.command || '--';
+          const safety = event.safety_state || '--';
+          const door = event.door_locked === null ? '--' : (event.door_locked ? 'LOCKED' : 'CLEAR');
+          return `<tr><td>${new Date(event.recorded_at * 1000).toLocaleTimeString()}</td><td><strong>${event.event_type}</strong></td><td>${event.source}</td><td>${safety}</td><td>${door}</td><td style="max-width:280px; white-space:normal;">${evidence}</td></tr>`;
+        }).join('');
+      } catch (err) { console.debug('Flight recorder poll error:', err); }
+    }
+
+    // Phase 6: the picture is driven by exact simulation truth from FastAPI.
+    let twinInitialized=false, twinPlaying=false, twinTimer=null, twinScene, twinCamera, twinRenderer, twinActors=new Map(), twinDoorZone, twinDoorHinge, twinDoorMaterial;
+    async function initializeDigitalTwin() {
+      if (twinInitialized) return;
+      if (!window.THREE) { twinScenarioInfo.innerText='Three.js did not load. Refresh with internet access.'; return; }
+      twinInitialized=true; twinScene=new THREE.Scene(); twinScene.fog=new THREE.Fog(0x080d1b,18,48);
+      twinCamera=new THREE.PerspectiveCamera(48,twinViewport.clientWidth/twinViewport.clientHeight,.1,120);
+      twinCamera.position.set(8.8,10.5,12.5); twinCamera.lookAt(-.7,0,-8);
+      twinRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); twinRenderer.setPixelRatio(Math.min(devicePixelRatio,2)); twinRenderer.setSize(twinViewport.clientWidth,twinViewport.clientHeight); twinRenderer.shadowMap.enabled=true; twinRenderer.shadowMap.type=THREE.PCFSoftShadowMap; twinRenderer.setClearColor(0x080d1b,1); twinViewport.prepend(twinRenderer.domElement);
+      twinScene.add(new THREE.HemisphereLight(0x9bc7ff,0x07101c,2.4)); const sun=new THREE.DirectionalLight(0xe9f4ff,2.2); sun.position.set(-8,14,6); sun.castShadow=true; twinScene.add(sun);
+      addTwinRoad(); addTwinCar();
+      const fov=new THREE.Mesh(new THREE.RingGeometry(.3,6.4,48,1,-.85,1.7),new THREE.MeshBasicMaterial({color:0x22d3ee,transparent:true,opacity:.2,side:THREE.DoubleSide})); fov.rotation.x=-Math.PI/2; fov.position.set(-.91,.025,0); twinScene.add(fov);
+      try { const data=await (await fetch('/api/twin/scenarios')).json(); twinScenarioSelect.innerHTML=data.scenarios.map(s=>`<option value="${s.id}">${s.name}</option>`).join(''); await resetTwin(); }
+      catch(err) { twinScenarioInfo.innerText='Digital-twin API is unavailable. Restart your backend after the Phase 6 update.'; }
+    }
+    async function resetTwin() { stopTwin(); try { updateTwin(await (await fetch(`/api/twin/reset?scenario_id=${encodeURIComponent(twinScenarioSelect.value||'bicycle_overtake')}`,{method:'POST'})).json()); } catch(err) { twinScenarioInfo.innerText='Could not reset the digital twin.'; } }
+    async function stepTwin() { try { updateTwin(await (await fetch('/api/twin/step?dt_s=0.12',{method:'POST'})).json()); } catch(err) { stopTwin(); } }
+    async function requestTwinDoor() { try { updateTwin(await (await fetch('/api/twin/door-request?open=true',{method:'POST'})).json()); } catch(err) { twinScenarioInfo.innerText='Door request could not reach the digital-twin API.'; } }
+    function updateTwin(data) {
+      const p=data.participants?.[0], r=data.virtual_radar?.[0]; if(!p) return;
+      twinClock.innerText=`T+${Number(data.timestamp_sec).toFixed(2)} s`; twinTrueDistance.innerText=`${p.actual_distance_m.toFixed(2)} m`; twinRadarDistance.innerText=r?.target_detected?`${r.measured_distance_m.toFixed(2)} m`:'No return'; twinTrueTtc.innerText=p.actual_ttc_seconds==null?'--':`${p.actual_ttc_seconds.toFixed(2)} s`; twinRadarError.innerText=r?.target_detected?`${Math.abs(r.measured_distance_m-p.actual_distance_m).toFixed(2)} m`:'--';
+      twinScenarioInfo.innerText=`${data.scenario_name}: yellow is the exact physical position; cyan is the LEFT rear radar field and its reading has deliberate measurement noise.`;
+      const safety=data.safety||{}; const danger=safety.state==='CRITICAL';
+      twinSafetyState.innerText=danger?'⛔ CRITICAL — DOOR VETO':'✓ SAFE — CORRIDOR CLEAR'; twinSafetyState.style.color=danger?'var(--status-critical)':'var(--status-safe)';
+      twinDoorState.innerText=safety.door_locked?'LEFT DOOR: LOCKED / 0°':'LEFT DOOR: OPEN / 65°'; twinDoorState.style.color=safety.door_locked?'var(--status-critical)':'var(--status-safe)';
+      btnTwinDoorRequest.innerText=safety.door_open_requested?'🚪 Simulated Request Sent':'🚪 Simulate Left Door Request';
+      if(danger) twinActionResult.innerText='VETO: traffic occupies the red left-door swing zone. The simulated latch is forced to 0°.';
+      else if(safety.door_open_requested) twinActionResult.innerText='PERMITTED: corridor is clear, so the simulated left door opens to 65°.';
+      else twinActionResult.innerText='Door is closed. Send a simulated request to test the safety decision.';
+      if(twinDoorHinge){ twinDoorHinge.rotation.y=THREE.MathUtils.degToRad(-(safety.door_angle_deg||0)); twinDoorMaterial.color.setHex(danger?0xef4444:(safety.door_locked?0x2e8cff:0x10b981)); }
+      if(twinDoorZone) twinDoorZone.material.opacity=danger ? .62 : .25;
+      // Freeze on the actual safety event so the evaluator can inspect the
+      // vetoed left door rather than watching a fast target pass it instantly.
+      if(danger && twinPlaying) stopTwin();
+      if(!twinDoorZone) { const shape=new THREE.Shape(), points=data.car.door_zone_polygon; points.forEach(([x,z],i)=>i?shape.lineTo(x,z*.35):shape.moveTo(x,z*.35)); shape.closePath(); twinDoorZone=new THREE.Mesh(new THREE.ShapeGeometry(shape),new THREE.MeshBasicMaterial({color:0xfb4b5c,transparent:true,opacity:.48,side:THREE.DoubleSide})); twinDoorZone.rotation.x=-Math.PI/2; twinDoorZone.position.y=.03; twinScene.add(twinDoorZone); }
+      let actor=twinActors.get(p.object_id); if(!actor) { actor=makeTwinActor(p.object_type); twinActors.set(p.object_id,actor); twinScene.add(actor); } actor.position.set(p.x_pos_m,.08,p.y_pos_m*.35); actor.rotation.y=Math.atan2(p.lateral_velocity_mps||0,p.velocity_mps||1); twinRenderer.render(twinScene,twinCamera);
+    }
+    function twinMat(color,metalness=.1){return new THREE.MeshStandardMaterial({color,metalness,roughness:.38});}
+    function addTwinRoad(){
+      const road=new THREE.Mesh(new THREE.PlaneGeometry(15,30),twinMat(0x202938));road.rotation.x=-Math.PI/2;road.position.z=-7;road.receiveShadow=true;twinScene.add(road);
+      const verge=new THREE.Mesh(new THREE.PlaneGeometry(4,30),twinMat(0x172c23));verge.rotation.x=-Math.PI/2;verge.position.set(9.5,0,-7);twinScene.add(verge);
+      [-2.6,2.6].forEach(x=>{const edge=new THREE.Mesh(new THREE.BoxGeometry(.12,.035,30),twinMat(0xdce8f5));edge.position.set(x,.025,-7);twinScene.add(edge);});
+      for(let z=-20;z<7;z+=2.6){const dash=new THREE.Mesh(new THREE.BoxGeometry(.12,.035,1.1),twinMat(0xf6c957));dash.position.set(-4.8,.03,z);twinScene.add(dash);}
+    }
+    function addTwinCar(){
+      const car=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(1.95,.55,4.65),twinMat(0x1769ff,.45));body.position.y=.55;body.castShadow=true;car.add(body);
+      const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.58,.48,2.25),new THREE.MeshStandardMaterial({color:0x7dd3fc,metalness:.65,roughness:.15,transparent:true,opacity:.78}));cabin.position.set(0,1.03,.15);car.add(cabin);
+      [-.86,.86].forEach(x=>[-1.38,1.38].forEach(z=>{const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.18,20),twinMat(0x080b11));wheel.rotation.z=Math.PI/2;wheel.position.set(x,.32,z);car.add(wheel);}));
+      const lamp=new THREE.Mesh(new THREE.BoxGeometry(.5,.12,.08),new THREE.MeshBasicMaterial({color:0xa5f3fc}));lamp.position.set(0,.7,-2.35);car.add(lamp);twinScene.add(car);
+      const hinge=new THREE.Group();hinge.position.set(-.98,.68,.65);const door=new THREE.Mesh(new THREE.BoxGeometry(.09,.48,1.08),twinMat(0x2e8cff,.35));door.position.set(0,0,-.53);hinge.add(door);twinDoorHinge=hinge;twinDoorMaterial=door.material;twinScene.add(hinge);
+    }
+    function makeTwinActor(type){
+      const g=new THREE.Group(), yellow=twinMat(0xfbbf24,.2), dark=twinMat(0x111827,.1);
+      if(type==='motorcycle'||type==='bicycle'){[-.38,.38].forEach(z=>{const w=new THREE.Mesh(new THREE.TorusGeometry(.22,.065,8,18),dark);w.rotation.y=Math.PI/2;w.position.set(0,.26,z);g.add(w);});const frame=new THREE.Mesh(new THREE.BoxGeometry(.22,.2,.72),yellow);frame.position.y=.42;g.add(frame);const rider=new THREE.Mesh(new THREE.SphereGeometry(.18,14,12),yellow);rider.position.set(0,.78,.05);g.add(rider);}
+      else {const body=new THREE.Mesh(new THREE.BoxGeometry(.9,.46,1.8),yellow);body.position.y=.42;g.add(body);const roof=new THREE.Mesh(new THREE.BoxGeometry(.7,.28,.9),twinMat(0xffd95c));roof.position.y=.78;g.add(roof);}
+      return g;
+    }
+    function stopTwin(){twinPlaying=false;if(twinTimer)clearInterval(twinTimer);twinTimer=null;btnTwinPlay.innerText='▶ Play';}
+    btnTwinPlay.addEventListener('click',()=>{if(twinPlaying)return stopTwin();twinPlaying=true;btnTwinPlay.innerText='❚❚ Pause';twinTimer=setInterval(stepTwin,120);}); btnTwinReset.addEventListener('click',resetTwin); btnTwinDoorRequest.addEventListener('click',requestTwinDoor); twinScenarioSelect.addEventListener('change',resetTwin);
 
     // Initial Loaders
     async function loadSamples() {
@@ -1404,7 +1677,9 @@
     loadSamples();
     loadExistingJobs(true);
     pollIoTStatus();
+    pollFlightRecorder();
     setInterval(pollIoTStatus, 2500);
+    setInterval(pollFlightRecorder, 3000);
   </script>
 </body>
 </html>

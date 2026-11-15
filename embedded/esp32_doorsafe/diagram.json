@@ -43,7 +43,42 @@
       "id": "radar",
       "top": -160,
       "left": 80,
-      "attrs": { "distance": "80" }
+      "attrs": { "distance": "300" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_red",
+      "top": -70,
+      "left": -30,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_green",
+      "top": -40,
+      "left": -30,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_blue",
+      "top": -10,
+      "left": -30,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_echo_high",
+      "top": -120,
+      "left": 190,
+      "attrs": { "value": "1k" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_echo_low",
+      "top": -80,
+      "left": 210,
+      "attrs": { "value": "2k" }
     }
   ],
   "connections": [
@@ -55,13 +90,19 @@
     [ "esp:GND.1", "buzzer:2", "black", [ "v0" ] ],
     [ "esp:14", "buzzer:1", "purple", [ "v0" ] ],
     [ "esp:GND.2", "rgb_led:COM", "black", [ "v0" ] ],
-    [ "esp:25", "rgb_led:R", "red", [ "v0" ] ],
-    [ "esp:26", "rgb_led:G", "green", [ "v0" ] ],
-    [ "esp:27", "rgb_led:B", "blue", [ "v0" ] ],
+    [ "esp:25", "r_red:1", "red", [ "v0" ] ],
+    [ "r_red:2", "rgb_led:R", "red", [ "v0" ] ],
+    [ "esp:26", "r_green:1", "green", [ "v0" ] ],
+    [ "r_green:2", "rgb_led:G", "green", [ "v0" ] ],
+    [ "esp:27", "r_blue:1", "blue", [ "v0" ] ],
+    [ "r_blue:2", "rgb_led:B", "blue", [ "v0" ] ],
     [ "esp:5V", "radar:VCC", "red", [ "v0" ] ],
     [ "esp:GND.1", "radar:GND", "black", [ "v0" ] ],
     [ "esp:5", "radar:TRIG", "cyan", [ "v0" ] ],
-    [ "esp:18", "radar:ECHO", "yellow", [ "v0" ] ]
+    [ "radar:ECHO", "r_echo_high:1", "yellow", [ "v0" ] ],
+    [ "r_echo_high:2", "esp:18", "yellow", [ "v0" ] ],
+    [ "r_echo_high:2", "r_echo_low:1", "yellow", [ "v0" ] ],
+    [ "r_echo_low:2", "esp:GND.1", "black", [ "v0" ] ]
   ],
   "dependencies": {}
 }

@@ -7,6 +7,7 @@ from starlette.testclient import TestClient
 from app.iot.topics import (
     MQTTTopics,
     ActuatorCommandPayload,
+    ActuatorStatePayload,
     HazardTelemetryPayload,
     TouchSensorPayload,
     RadarSensorPayload,
@@ -30,7 +31,10 @@ def test_mqtt_topic_payload_schemas():
         servo_angle_deg=0,
         door_locked=True,
         chime_alert=True,
-        reason="Imminent cyclist collision"
+        reason="Imminent cyclist collision",
+        command_id="test-command-1",
+        session_id="test-session",
+        sequence=1,
     )
     assert cmd.servo_angle_deg == 0
     assert cmd.door_locked is True
@@ -98,6 +102,45 @@ def test_mqtt_client_buffer_and_publish():
     assert "is_connected" in status
     assert len(status["recent_messages"]) > 0
     assert status["recent_messages"][-1]["topic"] == MQTTTopics.ACTUATOR_COMMAND.value
+
+
+def test_actuator_feedback_updates_verified_hardware_state():
+    """The dashboard must use ESP32 acknowledgement rather than command animation alone."""
+    mqtt_client = DoorSafeMQTTClient(client_id="test_feedback_client")
+    bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=SafetyManager())
+    feedback = ActuatorStatePayload(
+        device_id="esp32_driver_door",
+        timestamp=12.5,
+        command_id="command-42",
+        session_id="test-session",
+        sequence=42,
+        requested_angle_deg=0,
+        applied_angle_deg=0,
+        door_locked=True,
+        status="APPLIED",
+    )
+
+    bridge._handle_actuator_state(feedback.model_dump())
+
+    status = bridge.get_hardware_status()
+    assert status["actuator_feedback"]["command_id"] == "command-42"
+    assert status["actuator_feedback"]["door_locked"] is True
+
+
+def test_offline_heartbeat_forces_fail_safe_lock():
+    mqtt_client = DoorSafeMQTTClient(client_id="test_fail_safe_client")
+    safety_mgr = SafetyManager()
+    bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=safety_mgr)
+
+    bridge._handle_incoming_heartbeat({
+        "device_id": "esp32_driver_door",
+        "status": "OFFLINE",
+        "uptime_seconds": 10,
+    })
+
+    assert safety_mgr.state_machine.state == SafetyState.FAIL_SAFE
+    assert safety_mgr.state_machine.servo_angle_deg == 0
+    assert mqtt_client.recent_messages[-1]["payload"]["command"] == "FAIL_SAFE_LOCK"
 
 
 def test_iot_bridge_safety_sync():
@@ -213,13 +256,23 @@ def test_iot_rest_api_endpoints():
     r_radar = client.post("/api/iot/simulate-radar", json={"distance_cm": 150.0, "relative_speed_mps": -3.0})
     assert r_radar.status_code == 200
     radar_data = r_radar.json()
-    assert radar_data["status"] == "RADAR_TELEMETRY_PUBLISHED"
+    assert radar_data["status"] == "RADAR_TELEMETRY_PROCESSED"
     assert radar_data["data"]["distance_m"] == 1.5
 
     # 4. Test Publish
     r_pub = client.post("/api/iot/publish-test", json={
-        "topic": "doorsafe/system/test",
-        "payload": {"test_metric": 42}
+        "topic": MQTTTopics.ACTUATOR_COMMAND.value,
+        "payload": {
+            "timestamp": time.time(),
+            "command": "LOCK_ENGAGED",
+            "servo_angle_deg": 0,
+            "door_locked": True,
+            "chime_alert": False,
+            "reason": "Protocol validation test",
+            "command_id": "api-test-command",
+            "session_id": "api-test-session",
+            "sequence": 1,
+        }
     })
     assert r_pub.status_code == 200
-    assert r_pub.json()["topic"] == "doorsafe/system/test"
+    assert r_pub.json()["topic"] == MQTTTopics.ACTUATOR_COMMAND.value

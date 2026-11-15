@@ -98,6 +98,7 @@ class DoorSafeMQTTClient:
                 (MQTTTopics.SENSOR_TOUCH.value, 1),
                 (MQTTTopics.SENSOR_RADAR.value, 1),
                 (MQTTTopics.SYSTEM_HEARTBEAT.value, 1),
+                (MQTTTopics.ACTUATOR_STATE.value, 1),
             ]
             self._client.subscribe(topics)
             logger.info(f"Subscribed to MQTT topics: {[t[0] for t in topics]}")

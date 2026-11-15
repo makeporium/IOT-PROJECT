@@ -85,8 +85,11 @@ class SafetyStateMachine:
         self,
         decision_rules: Optional[CollisionDecisionRules] = None,
         lock_hold_duration_s: float = 1.0,
-        sensor_timeout_s: float = 0.5,
-        enable_sensor_timeout: bool = False,
+        # A paused recorded-video frame is still valid telemetry for a short
+        # inspection window. 0.5 s caused a user to hit the handle after
+        # pausing and receive a false FAIL_SAFE lock before they could test it.
+        sensor_timeout_s: float = 30.0,
+        enable_sensor_timeout: bool = True,
     ):
         self.rules = decision_rules or CollisionDecisionRules()
         self.lock_hold_duration_s = lock_hold_duration_s
@@ -108,6 +111,17 @@ class SafetyStateMachine:
 
         # Passenger Handle Sensor
         self.is_handle_touched: bool = False
+
+    def force_fail_safe(self) -> None:
+        """Immediately enter the locked fail-safe state after a control-path failure."""
+        self.previous_state = self.state
+        self.state = SafetyState.FAIL_SAFE
+        self.actuator_command = ActuatorCommand.FAIL_SAFE_LOCK
+        self.servo_angle_deg = 0
+        self.state_entered_time = time.perf_counter()
+
+    def telemetry_is_fresh(self) -> bool:
+        return (time.perf_counter() - self.last_sensor_update_time) <= self.sensor_timeout_s
 
     def update(self, objects: List[Dict[str, Any]], frame_timestamp_s: float) -> SafetyFrameResult:
         """
@@ -201,9 +215,7 @@ class SafetyStateMachine:
         if self.enable_sensor_timeout:
             time_since_last_sensor = time.perf_counter() - self.last_sensor_update_time
             if time_since_last_sensor > self.sensor_timeout_s:
-                self.state = SafetyState.FAIL_SAFE
-                self.actuator_command = ActuatorCommand.FAIL_SAFE_LOCK
-                self.servo_angle_deg = 0
+                self.force_fail_safe()
 
         # Formulate Door Response
         if self.state == SafetyState.CRITICAL:

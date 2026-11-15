@@ -34,6 +34,7 @@ class SafetyManager:
         self.is_handle_touch_active: bool = False
         self.total_lock_vetoes: int = 0
         self.total_door_openings: int = 0
+        self.last_fail_safe_reason: Optional[str] = None
 
     def process_frame(self, objects: List[Dict[str, Any]], timestamp_sec: float) -> SafetyFrameResult:
         """Processes live or recorded frame telemetry through the deterministic state machine."""
@@ -117,6 +118,7 @@ class SafetyManager:
             "servo_angle_deg": servo_angle,
             "actuator_command": self.state_machine.actuator_command.value,
             "handle_touched": self.is_handle_touch_active,
+            "telemetry_fresh": self.state_machine.telemetry_is_fresh(),
             "min_ttc_seconds": min_ttc,
             "active_threats_count": len(threats),
             "threats": threats,
@@ -128,12 +130,27 @@ class SafetyManager:
             "recent_events": list(self.audit_log)[-10:]
         }
 
+    def force_fail_safe(self, reason: str) -> None:
+        """Locks the controller and records why the fail-safe was entered."""
+        if self.state_machine.state != SafetyState.FAIL_SAFE:
+            self.state_machine.force_fail_safe()
+        if reason != self.last_fail_safe_reason:
+            self.audit_log.append({
+                "timestamp": datetime.now().isoformat(),
+                "type": "FAIL_SAFE",
+                "reason": reason,
+                "servo_angle": 0,
+            })
+            logger.warning("Safety fail-safe engaged: %s", reason)
+            self.last_fail_safe_reason = reason
+
     def reset(self):
         """Resets the safety manager and state machine."""
         self.state_machine.reset()
         self.active_frame_result = None
         self.is_handle_touch_active = False
         self.last_handle_response = None
+        self.last_fail_safe_reason = None
         logger.info("SafetyManager reset to clean baseline state.")
 
 

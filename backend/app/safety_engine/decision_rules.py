@@ -116,11 +116,16 @@ class CollisionDecisionRules:
         )
 
         effective_ttc = ttc if ttc is not None else entry_t
-        is_conflict = (
-            intersects
-            or obj.get("is_conflict_predicted", False)
-            or (is_approaching and ttc is not None and ttc <= self.warning_ttc_s)
-        )
+        # A short longitudinal TTC alone is *not* evidence that a door will be
+        # struck.  A vehicle can be close and approaching while remaining in
+        # its own lane.  It becomes a door-opening conflict only when its
+        # measured/predicted path enters the physical swing corridor.
+        #
+        # ``is_conflict_predicted`` is produced by the independent 2-D TTC
+        # calculator, while ``intersects`` is this rule engine's direct
+        # projection.  Either is valid spatial evidence; TTC then determines
+        # severity, not whether a collision exists in the first place.
+        is_conflict = intersects or obj.get("is_conflict_predicted", False)
 
         # 5. Critical Threshold Evaluation (Imminent Door Impact)
         if is_conflict and effective_ttc is not None:

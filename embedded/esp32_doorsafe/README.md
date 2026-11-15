@@ -14,7 +14,7 @@ The firmware runs directly on an **ESP32 DevKit v1** microcontroller and interfa
 - **HC-SR04 Ultrasonic / mmWave Radar Sensor** (TRIG: GPIO 5, ECHO: GPIO 18): Measures physical distance behind the vehicle.
 - **Piezoelectric Buzzer** (GPIO 14): Sounds an acoustic $2\text{ kHz}$ urgent chime when unlatching is attempted under critical threat.
 - **RGB Status LED** (GPIO 25, 26, 27):
-  - 🟢 **Green**: `SAFE` / Unlatch permitted ($90^\circ$).
+  - 🟢 **Green**: `SAFE` / Unlatch permitted ($90^\circ$) after a fresh validated command.
   - 🔴 **Red**: `CRITICAL` / Physical veto lock engaged ($0^\circ$).
   - 🔵 **Blue**: WiFi / MQTT connecting or standby.
 
@@ -38,27 +38,38 @@ The firmware runs directly on an **ESP32 DevKit v1** microcontroller and interfa
 
 ## 3. How to Run in Wokwi Simulation
 
-You can run this exact simulation online with zero physical hardware:
+The ready-to-run course demonstration is published at
+[DOORSAFE Phase 4 ESP32 IoT Controller](https://wokwi.com/projects/480738567300295681).
+
+It contains the complete ESP32, servo, capacitive touch handle, HC-SR04 radar,
+RGB indicator, buzzer, and safe-lock MQTT flow. The Wokwi editor uses its
+compact `sketch.ino` demonstration firmware; `src/main.cpp` remains the
+canonical PlatformIO firmware in this repository.
+
+To reproduce the simulator locally:
 
 1. Open [Wokwi ESP32 Simulator](https://wokwi.com/).
 2. Select **ESP32**, or use the [Wokwi VS Code Extension](https://marketplace.visualstudio.com/items?itemName=Wokwi.wokwi-vscode).
 3. Load the files:
    - `diagram.json` (defines the components and wire routes).
-   - `src/main.cpp` (the C++ firmware code).
+   - a Wokwi `sketch.ino` based on the controller in `src/main.cpp`.
+   - Install the three Wokwi project libraries: `PubSubClient`, `ArduinoJson`,
+     and `ESP32Servo`.
 4. Click **▶ Start Simulation**:
    - The ESP32 will boot and connect to `Wokwi-GUEST` virtual WiFi.
    - It will connect to the MQTT broker at `broker.emqx.io:1883`.
-   - The servo will smoothly initialize to $90^\circ$ (Green LED).
-   - Click the **Capacitive Touch Handle** button: watch it immediately publish a touch event to `doorsafe/sensor/touch`.
+   - The servo initializes fail-safe at $0^\circ$ (Red LED) until a valid command arrives.
+   - Click the **Capacitive Touch Handle** button: its event is published to
+     `doorsafe/college_ayush/v1/sensor/touch` and appears in the serial monitor.
    - When the backend detects a hazard, watch the servo snap to $0^\circ$ (Red LED + warning chime)!
 
 ---
 
 ## 4. MQTT Automotive Communication Protocol
 
-The ESP32 communicates with the DOORSAFE FastAPI backend using lightweight JSON packets over the following topics:
+The ESP32 communicates with the DOORSAFE FastAPI backend using lightweight JSON packets under the project namespace `doorsafe/college_ayush/v1`:
 
-### 1. Actuator Command (`doorsafe/actuator/command`) - *ESP32 Listens*
+### 1. Actuator Command (`.../actuator/command`) - *ESP32 Listens*
 ```json
 {
   "timestamp": 1794695000.12,
@@ -70,7 +81,7 @@ The ESP32 communicates with the DOORSAFE FastAPI backend using lightweight JSON 
 }
 ```
 
-### 2. Capacitive Touch Event (`doorsafe/sensor/touch`) - *ESP32 Publishes*
+### 2. Capacitive Touch Event (`.../sensor/touch`) - *ESP32 Publishes*
 ```json
 {
   "device_id": "esp32_driver_door",
@@ -80,7 +91,7 @@ The ESP32 communicates with the DOORSAFE FastAPI backend using lightweight JSON 
 }
 ```
 
-### 3. Radar Distance Telemetry (`doorsafe/sensor/radar`) - *ESP32 Publishes*
+### 3. Radar Distance Telemetry (`.../sensor/radar`) - *ESP32 Publishes*
 ```json
 {
   "device_id": "esp32_rear_radar",
@@ -90,7 +101,7 @@ The ESP32 communicates with the DOORSAFE FastAPI backend using lightweight JSON 
 }
 ```
 
-### 4. Controller Heartbeat (`doorsafe/system/heartbeat`) - *ESP32 Publishes every 10s*
+### 4. Controller Heartbeat (`.../system/heartbeat`) - *ESP32 Publishes every 10s*
 ```json
 {
   "device_id": "esp32_driver_door",
@@ -100,3 +111,10 @@ The ESP32 communicates with the DOORSAFE FastAPI backend using lightweight JSON 
   "firmware_version": "1.0.0"
 }
 ```
+
+### 5. Actuator Feedback (`.../actuator/state`) - *ESP32 Publishes*
+After every accepted or rejected command, the ESP32 echoes the command ID and sequence together with the requested and applied servo angles. The dashboard prefers this confirmed state over local animation.
+
+## 5. Fail-Safe Baseline
+
+The servo initializes locked at $0^\circ$. If MQTT connectivity is lost for more than two seconds, the firmware returns to the locked position. Touch messages are not retained, and stale command sequences are rejected.

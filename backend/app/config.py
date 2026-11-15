@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Resolve base directories
@@ -53,7 +53,18 @@ class Settings(BaseSettings):
     MQTT_BROKER_PORT: int = 1883
     MQTT_CLIENT_ID: str = "doorsafe_backend_gateway"
     MQTT_KEEPALIVE: int = 60
-    MQTT_TOPIC_PREFIX: str = "doorsafe"
+    # Kept private to this course project. A generic public topic lets unrelated
+    # Wokwi viewers publish actuator commands into the same demonstration.
+    # Versioned namespace: prevents stale demo servers (or other public MQTT
+    # clients) from commanding this project's ESP32 actuator.
+    MQTT_TOPIC_PREFIX: str = "doorsafe/ayush/vehicle_door_demo_v2"
+
+    # Phase 5: local, durable vehicle event recorder. SQLite requires no
+    # account or network and is the fallback store for later cloud sync.
+    EVENT_DB_PATH: Path = BACKEND_DIR / "data" / "doorsafe_events.db"
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_PUBLISHABLE_KEY: Optional[str] = None
+    SUPABASE_EVENTS_TABLE: str = "vehicle_events"
     
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 

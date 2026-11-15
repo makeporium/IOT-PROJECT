@@ -1,27 +1,54 @@
 """DOORSAFE Phase 4: MQTT Topic Definitions & Structured IoT Message Schemas."""
 
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Optional
 from pydantic import BaseModel, Field
+from app.config import settings
+
+
+TOPIC_PREFIX = settings.MQTT_TOPIC_PREFIX.rstrip("/")
 
 
 class MQTTTopics(str, Enum):
     """Standardized MQTT topic hierarchy for automotive door safety."""
-    HAZARD_TELEMETRY = "doorsafe/telemetry/hazard"
-    ACTUATOR_COMMAND = "doorsafe/actuator/command"
-    SENSOR_TOUCH = "doorsafe/sensor/touch"
-    SENSOR_RADAR = "doorsafe/sensor/radar"
-    SYSTEM_HEARTBEAT = "doorsafe/system/heartbeat"
+    HAZARD_TELEMETRY = f"{TOPIC_PREFIX}/telemetry/hazard"
+    ACTUATOR_COMMAND = f"{TOPIC_PREFIX}/actuator/command"
+    ACTUATOR_STATE = f"{TOPIC_PREFIX}/actuator/state"
+    SENSOR_TOUCH = f"{TOPIC_PREFIX}/sensor/touch"
+    SENSOR_RADAR = f"{TOPIC_PREFIX}/sensor/radar"
+    SYSTEM_HEARTBEAT = f"{TOPIC_PREFIX}/system/heartbeat"
 
 
 class ActuatorCommandPayload(BaseModel):
     """Payload dispatched to ESP32 to position the physical SG90 door latch servo."""
     timestamp: float = Field(..., description="UNIX epoch or system timestamp (seconds)")
-    command: str = Field(..., description="LOCK_ENGAGED, UNLOCK_PERMITTED, FAIL_SAFE_LOCK, HAPTIC_WARNING")
-    servo_angle_deg: int = Field(..., description="Target servo horn angle: 0 (locked) or 90 (unlatched)")
+    command: str = Field(
+        ...,
+        pattern="^(LOCK_ENGAGED|UNLOCK_PERMITTED|FAIL_SAFE_LOCK|HAPTIC_WARNING)$",
+        description="Validated deterministic actuator command",
+    )
+    servo_angle_deg: int = Field(..., ge=0, le=90, description="Target servo horn angle")
     door_locked: bool = Field(..., description="True if door latch is physically blocked by safety veto")
     chime_alert: bool = Field(False, description="True if acoustic chime / buzzer should sound")
     reason: str = Field("Nominal operation", description="Human-readable decision cause")
+    command_id: str = Field(..., description="Correlation ID echoed by the ESP32")
+    session_id: str = Field(..., description="Backend boot session used to scope the sequence")
+    sequence: int = Field(..., ge=1, description="Monotonic command sequence used to reject stale commands")
+    ttl_ms: int = Field(1500, ge=100, le=10000, description="Maximum command age after receipt")
+    source_mode: str = Field("SIMULATION", description="LIVE, SIMULATION, RECORDED_DEMO, or FAIL_SAFE")
+
+
+class ActuatorStatePayload(BaseModel):
+    """Physical acknowledgement published by the ESP32 after applying a command."""
+    device_id: str = Field(..., description="Door controller identifier")
+    timestamp: float = Field(..., description="Controller uptime or synchronized timestamp")
+    command_id: str = Field(..., description="Applied command correlation ID")
+    session_id: str = Field(..., description="Backend boot session for this command")
+    sequence: int = Field(..., ge=1, description="Applied command sequence")
+    requested_angle_deg: int = Field(..., ge=0, le=90)
+    applied_angle_deg: int = Field(..., ge=0, le=90)
+    door_locked: bool
+    status: str = Field("APPLIED", description="APPLIED, REJECTED, or FAIL_SAFE")
 
 
 class HazardTelemetryPayload(BaseModel):
