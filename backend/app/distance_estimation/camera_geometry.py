@@ -92,8 +92,11 @@ class PinholeGroundProjector:
         y = self.height / math.tan(gamma)
 
         # Lateral distance X (offset from camera centerline)
-        # In planar pinhole geometry: X = Y * (u - cx) / fx * cos(alpha)
-        x = (y * (u - self.cx)) / self.fx
+        # Full perspective correction: X = Y * (u - cx) / fx * cos(alpha) / cos(gamma)
+        # (derived from the same pitch-rotated ray used for Y above). Omitting
+        # the cos(alpha)/cos(gamma) factor understates lateral offset for any
+        # non-trivial pitch, which is exactly the regime the door-zone test needs.
+        x = (y * (u - self.cx) / self.fx) * (math.cos(alpha) / math.cos(gamma))
 
         # Euclidean straight-line distance to camera
         dist = math.sqrt(x**2 + y**2)
@@ -133,7 +136,8 @@ class PinholeGroundProjector:
         tan_alpha = math.tan(alpha)
 
         v = int(self.cy + self.fy * tan_alpha)
-        u = int(self.cx + (x_m * self.fx) / y_m)
+        # Inverse of the corrected pixel_to_ground lateral formula.
+        u = int(self.cx + (x_m * self.fx * math.cos(gamma)) / (y_m * math.cos(alpha)))
 
         if 0 <= u < self.params.image_width and 0 <= v < self.params.image_height:
             return (u, v)

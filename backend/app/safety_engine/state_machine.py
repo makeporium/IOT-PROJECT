@@ -144,14 +144,18 @@ class SafetyStateMachine:
         # Determine raw target state
         if critical_list or uncertain_list:
             raw_target_state = SafetyState.CRITICAL if critical_list else SafetyState.FAIL_SAFE
-            self.last_critical_timestamp = frame_timestamp_s
+            # Hysteresis uses a monotonic clock, independent of frame_timestamp_s
+            # (which may be video-relative seconds from process_frame() or wall-clock
+            # epoch time from a handle-touch re-evaluation) so the two callers can
+            # never desync the "hold lock for N seconds" window.
+            self.last_critical_timestamp = now
         elif warning_list:
             raw_target_state = SafetyState.WARNING
         else:
             raw_target_state = SafetyState.SAFE
 
         # Apply Safety Hysteresis: Hold CRITICAL lock for buffer duration
-        elapsed_since_crit = frame_timestamp_s - self.last_critical_timestamp
+        elapsed_since_crit = now - self.last_critical_timestamp
         if self.state in (SafetyState.CRITICAL, SafetyState.FAIL_SAFE) and raw_target_state != SafetyState.CRITICAL:
             if elapsed_since_crit < self.lock_hold_duration_s:
                 # Hold in CRITICAL until road user has fully cleared the danger zone

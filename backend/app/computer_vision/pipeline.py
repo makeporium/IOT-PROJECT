@@ -30,31 +30,33 @@ def convert_to_web_h264(raw_mp4_path: str, final_mp4_path: str):
     Transcodes an OpenCV-generated MP4 video into standard web-compatible H.264 (AVC)
     with YUV420p pixel format and the '+faststart' moov atom placement.
     This is required for native HTML5 <video> playback in Chrome, Edge, Safari, and Firefox.
+
+    OpenCV's own 'mp4v' fourcc writer (used for the raw annotated output) produces
+    MPEG-4 Part 2 video that no mainstream browser can decode. If ffmpeg transcoding
+    fails here, falling back to that raw file would silently ship a video no
+    browser can play, so failure is raised instead of swallowed.
     """
-    try:
-        import imageio_ffmpeg
-        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-        cmd = [
-            ffmpeg_exe, "-y",
-            "-i", raw_mp4_path,
-            "-c:v", "libx264",
-            "-preset", "fast",
-            "-crf", "23",
-            "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart",
-            final_mp4_path
-        ]
-        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        if os.path.exists(raw_mp4_path) and os.path.abspath(raw_mp4_path) != os.path.abspath(final_mp4_path):
-            try:
-                os.remove(raw_mp4_path)
-            except OSError:
-                pass
-        logger.info(f"Successfully converted {final_mp4_path} to web-compatible H.264 (+faststart).")
-    except Exception as e:
-        logger.warning(f"Web H.264 transcoding fallback: {e}")
-        if os.path.exists(raw_mp4_path) and raw_mp4_path != final_mp4_path:
-            shutil.move(raw_mp4_path, final_mp4_path)
+    import imageio_ffmpeg
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    cmd = [
+        ffmpeg_exe, "-y",
+        "-i", raw_mp4_path,
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", "23",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        final_mp4_path
+    ]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0 or not os.path.exists(final_mp4_path):
+        raise RuntimeError(f"ffmpeg H.264 transcode failed (rc={result.returncode}): {result.stderr.decode(errors='replace')[-500:]}")
+    if os.path.exists(raw_mp4_path) and os.path.abspath(raw_mp4_path) != os.path.abspath(final_mp4_path):
+        try:
+            os.remove(raw_mp4_path)
+        except OSError:
+            pass
+    logger.info(f"Successfully converted {final_mp4_path} to web-compatible H.264 (+faststart).")
 
 
 class VideoProcessingPipeline:

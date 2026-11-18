@@ -1622,7 +1622,6 @@
               // over a newer clear frame.
               if (lastSyncedFrameIndex !== frame.frame_index) return;
               liveFrameSafety = decision;
-              setActuatorVisuals(decision.servo_angle_deg, decision.door_locked);
             })
             .catch(err => console.debug('IoT frame sync error:', err));
         }
@@ -1650,9 +1649,7 @@
         hazardMetric.innerText = '0';
         hazardMetric.style.color = 'var(--status-safe)';
         ttcMetric.innerText = '--';
-        if (liveFrameSafety) {
-          setActuatorVisuals(liveFrameSafety.servo_angle_deg, liveFrameSafety.door_locked);
-        }
+        setActuatorVisuals(90, false);
         return;
       }
 
@@ -1675,11 +1672,14 @@
       const nearest = [...frame.objects].sort((a,b)=>(a.distance_m||99)-(b.distance_m||99))[0];
       if (nearest && overviewDistance) overviewDistance.innerText = `${(nearest.distance_m||0).toFixed(1)} m`;
       if (nearest && overviewSpeed) overviewSpeed.innerText = `${Math.round((nearest.speed_mps||0)*3.6)} km/h`;
-      // Update the HUD only from the live backend decision. The cached safety
-      // result embedded in the processed video is illustrative, not authority.
-      if (liveFrameSafety) {
-        setActuatorVisuals(liveFrameSafety.servo_angle_deg, liveFrameSafety.door_locked);
-      }
+      // Paint the HUD instantly from this frame's own hazard_urgency — the
+      // exact same per-object classification that produced the burned-in
+      // video overlay and the metric/BEV colors above. Waiting on the async
+      // /api/iot/sync-observation round trip (now only used to drive the
+      // actual MQTT actuator command) made the badge visibly lag the video
+      // by up to the 250ms sync throttle, showing stale SAFE over a frame
+      // the overlay already marked CRITICAL.
+      setActuatorVisuals(frameMaxUrgency === 'CRITICAL' ? 0 : 90, frameMaxUrgency === 'CRITICAL');
     }
 
     function renderBEVFrame(frame) {
@@ -1713,11 +1713,12 @@
       bevCtx.font = 'bold 9px Inter';
       bevCtx.fillText('CAR', originX - 9, originY + 16);
 
-      // Door Zone Corridor
-      const doorX1 = originX + (-2.10 * scale);
-      const doorW = (2.10 - 0.75) * scale;
-      const doorY1 = originY - (1.80 * scale);
-      const doorH = (1.80 - (-0.60)) * scale;
+      // Door Zone Corridor (must match DoorZonePolygon's static bounds in
+      // app/safety_engine/zone_geometry.py, the actual lock-decision geometry)
+      const doorX1 = originX + (-2.20 * scale);
+      const doorW = (2.20 - 0.70) * scale;
+      const doorY1 = originY - (2.20 * scale);
+      const doorH = (2.20 - (-0.80)) * scale;
 
       const hasCrit = frame && frame.objects && frame.objects.some(o => o.hazard_urgency === 'CRITICAL');
       bevCtx.fillStyle = hasCrit ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.12)';
@@ -1825,14 +1826,15 @@
           }
         }
 
-        // On the perception screen, the selected video's exact-frame decision
-        // is authoritative. A previous physical LOCK acknowledgement describes
-        // hardware position, not collision risk, and must not repaint every
-        // later video frame as dangerous. Other screens continue to show the
-        // latest verified physical actuator state.
+        // On the perception screen, updateLiveTargetsFromFrame() already paints
+        // the HUD instantly from the currently displayed frame's own hazard
+        // data on every frame change. Repainting it here from this poller's
+        // (up to 2.5s stale) liveFrameSafety snapshot would re-introduce lag
+        // between the badge and the video it's describing. Other screens
+        // continue to show the latest verified physical actuator state.
         const perceptionVisible = document.getElementById('tab-perception')?.classList.contains('active');
-        if (perceptionVisible && liveFrameSafety) {
-          setActuatorVisuals(liveFrameSafety.servo_angle_deg, liveFrameSafety.door_locked);
+        if (perceptionVisible) {
+          // no-op: frame-local sync owns the HUD while this tab is active.
         } else if (feedback && (!requestedActuator || (
           feedback.session_id === requestedActuator.session_id &&
           feedback.sequence >= requestedActuator.sequence
@@ -1911,13 +1913,26 @@
     async function initializeDigitalTwin() {
       if (twinInitialized) return;
       if (!window.THREE) { twinScenarioInfo.innerText='Three.js did not load. Refresh with internet access.'; return; }
-      twinInitialized=true; twinScene=new THREE.Scene(); twinScene.fog=new THREE.Fog(0x080d1b,18,48);
-      twinCamera=new THREE.PerspectiveCamera(48,twinViewport.clientWidth/twinViewport.clientHeight,.1,120);
-      twinCamera.position.set(8.8,10.5,12.5); twinCamera.lookAt(-.7,0,-8);
-      twinRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'}); twinRenderer.setPixelRatio(1); twinRenderer.setSize(twinViewport.clientWidth,twinViewport.clientHeight); twinRenderer.shadowMap.enabled=false; twinRenderer.setClearColor(0x080d1b,1); twinViewport.prepend(twinRenderer.domElement);
-      twinScene.add(new THREE.HemisphereLight(0x9bc7ff,0x07101c,2.4)); const sun=new THREE.DirectionalLight(0xe9f4ff,2.2); sun.position.set(-8,14,6); sun.castShadow=true; twinScene.add(sun);
-      addTwinRoad(); addTwinCar();
-      const fov=new THREE.Mesh(new THREE.RingGeometry(.3,6.4,48,1,-.85,1.7),new THREE.MeshBasicMaterial({color:0x22d3ee,transparent:true,opacity:.2,side:THREE.DoubleSide})); fov.rotation.x=-Math.PI/2; fov.position.set(-.91,.025,0); twinScene.add(fov);
+      // WebGL context creation (and antialiased rendering on it) is the part
+      // most likely to fail or stall on a weak/outdated integrated GPU. Guard
+      // all of it, and only flip twinInitialized once it actually succeeds,
+      // so a failure here surfaces an error instead of a silently-stuck tab.
+      try {
+        twinScene=new THREE.Scene(); twinScene.fog=new THREE.Fog(0x080d1b,18,48);
+        twinCamera=new THREE.PerspectiveCamera(48,twinViewport.clientWidth/twinViewport.clientHeight,.1,120);
+        twinCamera.position.set(8.8,10.5,12.5); twinCamera.lookAt(-.7,0,-8);
+        // antialias+alpha forces expensive MSAA/compositing paths that are a
+        // known trigger for driver hangs on older integrated GPUs; the scene
+        // always paints an opaque background, so neither is needed here.
+        twinRenderer=new THREE.WebGLRenderer({antialias:false,alpha:false,powerPreference:'low-power'}); twinRenderer.setPixelRatio(1); twinRenderer.setSize(twinViewport.clientWidth,twinViewport.clientHeight); twinRenderer.shadowMap.enabled=false; twinRenderer.setClearColor(0x080d1b,1); twinViewport.prepend(twinRenderer.domElement);
+        twinScene.add(new THREE.HemisphereLight(0x9bc7ff,0x07101c,2.4)); const sun=new THREE.DirectionalLight(0xe9f4ff,2.2); sun.position.set(-8,14,6); sun.castShadow=true; twinScene.add(sun);
+        addTwinRoad(); addTwinCar();
+        const fov=new THREE.Mesh(new THREE.RingGeometry(.3,6.4,48,1,-.85,1.7),new THREE.MeshBasicMaterial({color:0x22d3ee,transparent:true,opacity:.2,side:THREE.DoubleSide})); fov.rotation.x=-Math.PI/2; fov.position.set(-.91,.025,0); twinScene.add(fov);
+      } catch(err) {
+        twinScenarioInfo.innerText='3D view unavailable on this device (WebGL failed to initialize): ' + err.message;
+        return;
+      }
+      twinInitialized=true;
       try { const data=await (await fetch('/api/twin/scenarios')).json(); twinScenarioSelect.innerHTML=data.scenarios.map(s=>`<option value="${s.id}">${s.name}</option>`).join(''); await resetTwin(); }
       catch(err) { twinScenarioInfo.innerText='Digital-twin API is unavailable. Restart your backend after the Phase 6 update.'; }
     }
@@ -1999,7 +2014,7 @@
         samples.forEach((s) => {
           const opt = document.createElement('option');
           opt.value = s.filename;
-          opt.innerText = `${s.filename} (${s.description})`;
+          opt.innerText = s.filename;
           sampleSelect.appendChild(opt);
         });
       } catch (err) {
@@ -2054,6 +2069,30 @@
       navigator.clipboard.writeText(JSON.stringify(fullTelemetryData, null, 2));
       btnCopyJson.innerText = 'Copied!';
       setTimeout(() => { btnCopyJson.innerText = 'Copy JSON'; }, 2000);
+    });
+
+    sampleSelect.addEventListener('change', () => {
+      const chosen = sampleSelect.value;
+      if (!chosen) return;
+      // Preview the raw, unprocessed source video. This only picks which
+      // sample "Run Perception" will process next -- it must not silently
+      // swap in an old analysis run over the video the user just chose.
+      selectedJobId = null;
+      currentJobId = null;
+      recentSelect.value = '';
+      fullTelemetryData = null;
+
+      mainVideoPlayer.pause();
+      mainVideoPlayer.removeAttribute('src');
+      mainVideoPlayer.load();
+      mainVideoPlayer.src = `/api/video/samples/${encodeURIComponent(chosen)}/stream`;
+      videoPlaceholder.style.display = 'none';
+      mainVideoPlayer.style.display = 'block';
+      mainVideoPlayer.onloadedmetadata = () => {
+        mainVideoPlayer.play().catch(e => console.log('Autoplay deferred:', e));
+      };
+
+      videoMetaText.innerText = `${chosen} • raw source (not yet analyzed)`;
     });
 
     // Start

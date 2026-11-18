@@ -23,11 +23,17 @@ class TTCCalculator:
 
     def __init__(
         self,
-        # Driver-side door danger envelope in vehicle metric space
-        door_x_min: float = -2.10,  # ~2.1m out from car center (full door swing + buffer)
-        door_x_max: float = -0.75,  # Car flank
-        door_y_min: float = -0.60,  # Just ahead of door
-        door_y_max: float = 1.80,   # Immediate rear of front door
+        # Driver-side door danger envelope in vehicle metric space.
+        # Must match app.safety_engine.zone_geometry.DoorZonePolygon's static
+        # bounds exactly: this calculator's hazard_urgency feeds the video
+        # overlay, targets table, and BEV dots, while DoorZonePolygon feeds the
+        # live lock decision. Two different boxes let them disagree on objects
+        # near the boundary, showing CRITICAL in the UI while the door stays
+        # unlocked (or vice versa).
+        door_x_min: float = -2.20,
+        door_x_max: float = -0.70,
+        door_y_min: float = -0.80,
+        door_y_max: float = 2.20,
         critical_ttc_threshold: float = 2.50,  # Seconds
         warning_ttc_threshold: float = 4.50    # Seconds
     ):
@@ -56,6 +62,19 @@ class TTCCalculator:
         """
         is_closing = (vy_mps < -0.30)
         closing_speed = abs(vy_mps) if is_closing else 0.0
+
+        # The door zone sits entirely at x < 0 (driver side). An object on the
+        # passenger side (x > ~0.70 m, the vehicle half-width) would have to
+        # pass through the vehicle body to reach the door — physically impossible.
+        if x_m > -self.x_max:
+            return TTCResult(
+                ttc_seconds=None,
+                time_to_exit_seconds=None,
+                is_conflict_predicted=False,
+                is_approaching=is_closing,
+                closing_speed_mps=round(closing_speed, 2),
+                hazard_urgency="SAFE"
+            )
 
         # If object is moving away or already past the door
         if vy_mps >= 0.0 and y_m < self.y_min:

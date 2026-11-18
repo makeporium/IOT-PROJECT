@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-15T18:44:55.971604+00:00",
-  "iterations": 20,
+  "generated_at": "2026-11-18T17:08:26.453844+00:00",
+  "iterations": 100,
   "simulation_step_latency_ms": {
-    "mean": 0.027,
+    "mean": 0.023,
     "p95": 0.043
   },
-  "virtual_radar_distance_mae_m": 0.162,
+  "virtual_radar_distance_mae_m": 0.116,
   "deterministic_false_safe_rate": 0.0,
   "danger_frames_checked": 0,
   "ml": {
