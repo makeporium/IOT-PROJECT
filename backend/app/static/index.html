@@ -464,6 +464,189 @@
       border: 1px solid var(--status-safe);
       color: #A7F3D0;
     }
+    /* DOORSAFE visual system: midnight instrument console, not a generic card grid. */
+    body { background: #070b12; background-image: linear-gradient(rgba(31,52,69,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(31,52,69,.13) 1px, transparent 1px), radial-gradient(circle at 12% -10%, rgba(15,118,110,.18), transparent 34%), radial-gradient(circle at 90% 20%, rgba(30,64,175,.16), transparent 30%); background-size: 34px 34px, 34px 34px, auto, auto; }
+    header { background: rgba(7,11,18,.9); border-bottom: 1px solid #244052; box-shadow: 0 8px 30px rgba(0,0,0,.3); }
+    .brand-logo { border-radius: 3px 12px 3px 12px; background: #d8ff5b; color:#071018; box-shadow: 4px 4px 0 #0e7490; }
+    .brand-title { letter-spacing: .08em; text-transform: uppercase; font-size: .94rem; }
+    .brand-subtitle { color:#76a6b9; letter-spacing:.16em; }
+    .nav-tabs-bar { background: rgba(8,14,23,.82); border-bottom-color:#244052; padding-left:2rem; }
+    .nav-tab-btn { letter-spacing:.03em; text-transform:uppercase; font-size:.72rem; padding:.95rem 1.05rem; }
+    .nav-tab-btn.active { color:#d8ff5b; border-bottom-color:#d8ff5b; background:linear-gradient(180deg,transparent,rgba(216,255,91,.08)); }
+    main { max-width: 1680px; }
+    .card, .virtual-bench-box, .video-viewport-card { background: rgba(13,21,32,.88); border:1px solid #294356; border-radius:4px; box-shadow: 0 14px 35px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.025); }
+    .card::before, .virtual-bench-box::before { content:''; display:block; width:34px; height:2px; background:#d8ff5b; margin-bottom:.8rem; opacity:.8; }
+    .card-title { text-transform:uppercase; letter-spacing:.08em; font-size:.72rem; color:#b9d0da; }
+    .stat-pill { background:linear-gradient(135deg,rgba(14,28,41,.9),rgba(8,15,24,.95)); border:1px solid #294356; border-radius:3px; position:relative; overflow:hidden; }
+    .stat-pill::after { content:'+'; position:absolute; right:8px; top:4px; color:#294356; font:700 1rem 'JetBrains Mono'; }
+    .stat-value { font-family:'JetBrains Mono',monospace; letter-spacing:-.04em; }
+    .btn-primary { background:#d8ff5b; color:#071018; border:0; box-shadow:3px 3px 0 #0e7490; border-radius:3px; font-weight:800; }
+    .btn-primary:hover { background:#efffa7; transform:translate(-1px,-1px); }
+    .btn-secondary { border-radius:3px; border-color:#356076; background:#102131; }
+    .badge-pill, .master-actuator-hud { border-radius:3px; }
+    .twin-viewport { border-radius:4px; border-color:#356076; box-shadow: inset 0 0 50px rgba(34,211,238,.05); }
+    .twin-legend span { border-radius:2px; letter-spacing:.04em; }
+    select, input, .select-input, .text-input { background:#09131e !important; color:#e7f5f8 !important; border:1px solid #356076 !important; border-radius:3px !important; }
+    table thead { background:#102131; color:#d8ff5b; letter-spacing:.1em; }
+    /* Product UI variant: calm, editorial, Apple-like restraint. */
+    :root { --bg-base:#f5f5f7; --bg-surface:rgba(255,255,255,.82); --bg-card:#ffffff; --bg-card-hover:#fafafa; --border-subtle:#e5e5ea; --border-accent:#d2d2d7; --text-primary:#1d1d1f; --text-secondary:#515154; --text-muted:#86868b; --accent-blue:#0071e3; --accent-blue-glow:rgba(0,113,227,.16); --accent-cyan:#147ef5; --status-safe:#16803c; --status-safe-bg:#e8f5ed; --status-warning:#b26a00; --status-warning-bg:#fff4df; --status-critical:#d92d20; --status-critical-bg:#fff0ef; --status-purple:#6e6e73; }
+    * { -webkit-font-smoothing:antialiased; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif; background:#f5f5f7; background-image:none; color:#1d1d1f; }
+    header { background:rgba(255,255,255,.84); backdrop-filter:saturate(180%) blur(22px); border-bottom:1px solid rgba(0,0,0,.08); box-shadow:0 1px 10px rgba(0,0,0,.03); }
+    .brand-logo { border-radius:12px; background:#0071e3; color:white; box-shadow:none; padding:.42rem .66rem; }
+    .brand-title { font-size:1rem; letter-spacing:-.02em; text-transform:none; color:#1d1d1f; }
+    .brand-subtitle { color:#86868b; letter-spacing:.08em; }
+    .master-actuator-hud { background:rgba(245,245,247,.82); border:1px solid #e5e5ea; border-radius:999px; }
+    .hud-status-text { color:#1d1d1f; font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; letter-spacing:-.01em; }
+    .header-status-group .badge-pill { background:#f5f5f7; color:#515154; border-color:#e5e5ea; }
+    .nav-tabs-bar { background:rgba(255,255,255,.76); border-bottom:1px solid rgba(0,0,0,.08); padding-left:1.5rem; }
+    .nav-tab-btn { color:#6e6e73; text-transform:none; letter-spacing:-.01em; font-size:.82rem; font-weight:600; padding:.9rem 1.1rem; }
+    .nav-tab-btn:hover { color:#1d1d1f; }
+    .nav-tab-btn.active { color:#0071e3; border-bottom-color:#0071e3; background:transparent; }
+    main { max-width:1560px; margin:1.6rem auto; }
+    .card, .virtual-bench-box, .video-viewport-card { background:rgba(255,255,255,.84); border:1px solid rgba(0,0,0,.08); border-radius:18px; box-shadow:0 8px 28px rgba(0,0,0,.055); }
+    .card::before, .virtual-bench-box::before { display:none; }
+    .card-title { text-transform:none; letter-spacing:-.015em; font-size:1rem; color:#1d1d1f; }
+    .stat-pill { background:#fff; border:1px solid #e5e5ea; border-radius:14px; box-shadow:0 3px 12px rgba(0,0,0,.035); }
+    .stat-pill::after { display:none; }
+    .stat-value { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; letter-spacing:-.04em; color:#1d1d1f; }
+    .stat-label { color:#86868b; }
+    .btn-primary { background:#0071e3; color:#fff; border:0; border-radius:999px; box-shadow:none; font-weight:600; }
+    .btn-primary:hover { background:#0077ed; transform:none; }
+    .btn-secondary { border-radius:999px; border-color:#d2d2d7; background:#fff; color:#1d1d1f; }
+    .badge-pill { border-radius:999px; font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; }
+    select, input, .select-input, .text-input { background:#fff !important; color:#1d1d1f !important; border:1px solid #d2d2d7 !important; border-radius:10px !important; }
+    .video-viewport-card, .video-wrapper { border-radius:18px; }
+    .twin-viewport { border-radius:16px; border-color:#d2d2d7; }
+    .twin-legend span { border-radius:999px; background:rgba(255,255,255,.88); color:#515154; border-color:rgba(0,0,0,.1); }
+    table thead { background:#f5f5f7; color:#515154; letter-spacing:.02em; }
+    @media (max-width:900px) { main { padding:0 1rem; } }
+    /* Command-center shell inspired by the approved DOORSAFE concept image. */
+    @media (min-width: 1050px) {
+      header { margin-left:248px; min-height:76px; padding-left:1.8rem; }
+      header .brand-section { display:none; }
+      .nav-tabs-bar { position:fixed; z-index:120; left:0; top:0; bottom:0; width:248px; display:flex; flex-direction:column; align-items:stretch; gap:.22rem; padding:1.7rem 1rem 1.25rem; background:linear-gradient(180deg,#fbfbfc 0%,#f4f4f6 100%); border-right:1px solid #e4e4e8; border-bottom:0; }
+      .nav-tabs-bar::before { content:'DOORSAFE\A\A Vehicle Door Safety\A Command Center'; white-space:pre; display:block; padding:.35rem 1rem 2rem; color:#202127; font-size:.97rem; line-height:1.5; font-weight:700; letter-spacing:-.015em; }
+      header::before { content:'Command Center\AReal-time door safety monitoring'; white-space:pre; display:block; margin-right:auto; color:#1d1d1f; font-size:1.45rem; line-height:1.2; font-weight:780; letter-spacing:-.035em; }
+      header::after { content:''; display:block; }
+      #btnQuickTouch { display:none; }
+      .nav-tab-btn { width:100%; justify-content:flex-start; border:0; border-radius:10px; padding:.74rem .9rem; color:#55575e; font-size:.89rem; font-weight:560; }
+      .nav-tab-btn:hover { background:#ececf0; color:#202127; }
+      .nav-tab-btn.active { color:#163d83; background:#e5efff; border:0; font-weight:650; }
+      .nav-tab-btn:nth-of-type(6) { margin-top:.65rem; padding-top:1.05rem; border-top:1px solid #ddddE2; border-radius:0; }
+      main { margin-left:248px; width:calc(100% - 248px); max-width:none; padding:0 2.2rem; }
+      .perception-grid { grid-template-columns:300px minmax(480px,1fr) 350px; }
+    }
+    @media (max-width:1049px) { .nav-tabs-bar { overflow-x:auto; } }
+
+    /* Overview composition: mirrors the reference command-center layout. */
+    .overview-decision-card { background:#edf7eb; border:1px solid #d8e8d2; border-radius:16px; padding:1.35rem 1.45rem; margin-bottom:.9rem; color:#1d1d1f; }
+    .overview-decision-title { display:flex; align-items:center; gap:.65rem; font-size:1.7rem; font-weight:800; letter-spacing:-.035em; }
+    .decision-dot { width:14px; height:14px; border-radius:50%; background:#1a9724; box-shadow:0 0 0 5px rgba(26,151,36,.09); }
+    .overview-decision-sub { margin:.45rem 0 0 1.55rem; color:#515154; font-size:.92rem; }
+    .overview-metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; margin-bottom:1rem; }
+    .overview-metric { min-height:102px; display:grid; grid-template-columns:auto 1fr; align-content:center; column-gap:.55rem; padding:1rem 1.15rem; background:#fff; border:1px solid #e5e5ea; border-radius:15px; box-shadow:0 3px 12px rgba(0,0,0,.025); color:#515154; font-size:.9rem; }
+    .overview-metric strong { grid-column:2; color:#1d1d1f; font-size:1.65rem; letter-spacing:-.04em; margin-top:.25rem; }
+    .metric-icon { grid-row:span 2; font-size:1.55rem; color:#6e6e73; align-self:start; }
+    .overview-metric-wide { grid-column:span 2; min-height:92px; }
+    .overview-lower-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:1rem; margin-top:1rem; }
+    .overview-panel { background:rgba(255,255,255,.84); border:1px solid rgba(0,0,0,.08); border-radius:16px; padding:1.25rem 1.35rem; box-shadow:0 8px 24px rgba(0,0,0,.04); }
+    .overview-panel-head { display:flex; align-items:center; gap:.55rem; justify-content:space-between; font-weight:750; font-size:1.15rem; margin-bottom:1rem; }
+    .live-chip { display:inline-flex; align-items:center; gap:.45rem; padding:.35rem .7rem; background:#e8f5e8; color:#22832a; border-radius:999px; font-size:.75rem; font-weight:650; }
+    .live-chip i { width:8px; height:8px; border-radius:50%; background:#22952c; }
+    .timeline-row { display:grid; grid-template-columns:10px 82px 1fr; gap:.65rem; align-items:center; min-height:34px; color:#6e6e73; font-size:.82rem; }
+    .timeline-row i { width:10px; height:10px; border-radius:50%; background:#c3c4c7; position:relative; }
+    .timeline-row:not(:last-child) i::after { content:''; position:absolute; left:4px; top:10px; width:1px; height:25px; background:#d2d2d7; }
+    .timeline-row.active { background:#eef8ed; border-radius:10px; padding:.35rem .55rem; color:#1d1d1f; }
+    .timeline-row.active i { background:#218d28; }
+    .timeline-row b { font-weight:500; color:#1d1d1f; }
+    .timeline-row em { font-style:normal; color:#515154; }
+    .explanation-panel { border-color:#d2d2d7; }
+    .explain-mark { color:#0071e3; font-size:1.55rem; }
+    .explanation-panel p { color:#343438; line-height:1.55; font-size:.9rem; margin-bottom:1rem; }
+    .overview-explain-btn { width:auto; padding:.65rem 1.2rem; }
+    .vehicle-pill { min-width:205px; justify-content:center; background:#fff !important; color:#343438 !important; }
+    .vehicle-glyph { font-size:1.1rem; color:#515154; }
+    .overview-zoom-control { display:inline-flex; align-items:center; gap:.4rem; color:#6e6e73; font-size:.7rem; margin-left:auto; margin-right:.85rem; }
+    .overview-zoom-control input { width:74px; accent-color:#0071e3; }
+    .overview-zoom-control output { min-width:32px; text-align:right; color:#515154; font-variant-numeric:tabular-nums; }
+    .video-wrapper, #bevViewport { --overview-zoom:1; overflow:hidden; }
+    .video-wrapper video, #bevCanvas { transform:scale(var(--overview-zoom)); transform-origin:center center; transition:transform .16s ease-out; }
+    @media (min-width:1050px) {
+      .perception-grid { grid-template-columns:minmax(620px,1.42fr) minmax(410px,.92fr); gap:1.15rem; }
+      .perception-grid > .card:first-child { display:none; }
+      .perception-grid > div:nth-child(2) { grid-column:1; }
+      .perception-grid > .radar-col { grid-column:2; grid-row:1; }
+      .perception-grid > div:nth-child(2) > .telemetry-row { display:none; }
+      .radar-col { display:flex; flex-direction:column; }
+      .radar-col > .card:first-of-type { order:-3; }
+      .radar-col > .overview-decision-card { order:-2; }
+      .radar-col > .overview-metric-grid { order:-1; }
+      .radar-col > .card:first-of-type .card-title { margin-bottom:.7rem; }
+      .radar-col > .card:first-of-type { padding:1rem; }
+      .radar-col > .card:first-of-type canvas { width:100%; height:auto; }
+      .radar-col > .card:last-of-type { display:none; }
+      .video-wrapper { min-height:500px; }
+      .video-viewport-card { border-radius:16px; }
+    }
+    @media (max-width:1049px) { .overview-lower-grid { grid-template-columns:1fr; } }
+
+    /* Quiet, consistent interface symbols. Emoji vary by operating system and make the
+       cockpit look like a prototype; these small line icons stay crisp everywhere. */
+    .ui-icon { width:18px; height:18px; flex:0 0 18px; display:inline-flex; align-items:center; justify-content:center; color:currentColor; }
+    .ui-icon svg { width:16px; height:16px; display:block; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .nav-tab-btn .ui-icon { color:#8b8d93; }
+    .nav-tab-btn.active .ui-icon { color:#0071e3; }
+    .btn .ui-icon { width:16px; height:16px; flex-basis:16px; }
+    .btn-warning { background:#f5f5f7; border:1px solid #d2d2d7; color:#1d1d1f; }
+    .btn-warning:hover:not(:disabled) { background:#e8e8ed; }
+    .section-kicker { font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#86868b; }
+    @media (min-width:1050px) {
+      .nav-tabs-bar::after { content:'VEHICLE\A DOORSAFE-01\A\A ●  System healthy'; white-space:pre; display:block; margin:auto .7rem .2rem; padding:1.1rem .6rem 0; border-top:1px solid #ddddE2; color:#6b6d74; font-size:.74rem; line-height:1.55; letter-spacing:0; }
+      .nav-tab-btn { min-height:42px; }
+    }
+
+    /* Restored original DOORSAFE cockpit layout. */
+    :root { --bg-base:#0B0F19; --bg-surface:#111827; --bg-card:#1F2937; --bg-card-hover:#263346; --border-subtle:#374151; --border-accent:#4B5563; --text-primary:#F9FAFB; --text-secondary:#D1D5DB; --text-muted:#9CA3AF; --accent-blue:#3B82F6; --accent-blue-glow:rgba(59,130,246,.25); --accent-cyan:#06B6D4; --status-safe:#10B981; --status-safe-bg:rgba(16,185,129,.15); --status-warning:#F59E0B; --status-warning-bg:rgba(245,158,11,.15); --status-critical:#EF4444; --status-critical-bg:rgba(239,68,68,.2); --status-purple:#8B5CF6; }
+    body { font-family:'Inter',sans-serif; background-color:var(--bg-base); background-image:none; color:var(--text-primary); }
+    header { margin-left:0; min-height:0; padding:.75rem 1.5rem; background:rgba(17,24,39,.95); border-bottom:1px solid var(--border-subtle); box-shadow:none; }
+    header::before, header::after { content:none; display:none; }
+    header .brand-section { display:flex; }
+    .brand-logo { background:linear-gradient(135deg,#2563EB,#06B6D4); color:#fff; padding:.35rem .65rem; border-radius:8px; box-shadow:0 0 15px rgba(37,99,235,.4); }
+    .brand-title { font-size:1.1rem; letter-spacing:-.01em; text-transform:none; color:var(--text-primary); }
+    .brand-subtitle { color:var(--text-muted); letter-spacing:.08em; }
+    .master-actuator-hud { background:#0F172A; border-color:var(--border-subtle); border-radius:9999px; }
+    .hud-status-text { color:var(--status-safe); font-family:'JetBrains Mono',monospace; letter-spacing:.04em; }
+    #btnQuickTouch { display:inline-flex; background:linear-gradient(135deg,#D97706,#B45309); color:#fff; border:0; }
+    .header-status-group .badge-pill, .badge-pill { background:var(--bg-card); border-color:var(--border-subtle); color:var(--text-secondary); border-radius:6px; font-family:'JetBrains Mono',monospace; }
+    .vehicle-pill { display:none; }
+    .nav-tabs-bar { position:static; z-index:auto; width:auto; min-height:0; flex-direction:row; align-items:stretch; gap:.5rem; padding:0 1.5rem; background:var(--bg-surface); border-right:0; border-bottom:1px solid var(--border-subtle); }
+    .nav-tabs-bar::before, .nav-tabs-bar::after { content:none; display:none; }
+    .nav-tab-btn { width:auto; min-height:0; justify-content:flex-start; color:var(--text-muted); text-transform:none; letter-spacing:0; font-size:.85rem; font-weight:600; padding:.85rem 1.25rem; border:0; border-bottom:2px solid transparent; border-radius:0; }
+    .nav-tab-btn:hover { background:transparent; color:var(--text-primary); }
+    .nav-tab-btn.active { color:var(--accent-cyan); background:rgba(6,182,212,.05); border-bottom-color:var(--accent-cyan); }
+    .nav-tab-btn:nth-of-type(6) { margin-top:0; padding-top:.85rem; border-top:0; border-radius:0; }
+    .nav-tab-btn .ui-icon { color:currentColor; }
+    main { margin:1.25rem auto; margin-left:auto; width:100%; max-width:1560px; padding:0 1.5rem; }
+    .card, .virtual-bench-box, .video-viewport-card { background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; box-shadow:0 4px 6px -1px rgba(0,0,0,.2); }
+    .card-title { text-transform:none; letter-spacing:0; font-size:.92rem; color:var(--text-primary); }
+    .stat-pill { background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; box-shadow:none; }
+    .stat-value { font-family:'JetBrains Mono',monospace; color:var(--text-primary); }
+    .btn-primary { background:linear-gradient(135deg,#2563EB,#1D4ED8); color:#fff; border-radius:8px; box-shadow:none; }
+    .btn-secondary { background:var(--bg-card); color:var(--text-secondary); border-color:var(--border-subtle); border-radius:8px; }
+    select, input, .select-input, .text-input { background:var(--bg-card) !important; color:var(--text-primary) !important; border:1px solid var(--border-subtle) !important; border-radius:6px !important; }
+    .perception-grid { grid-template-columns:340px 1fr 400px; gap:1.25rem; }
+    .perception-grid > .card:first-child { display:block; }
+    .perception-grid > div:nth-child(2), .perception-grid > .radar-col { grid-column:auto; grid-row:auto; }
+    .perception-grid > div:nth-child(2) > .telemetry-row { display:grid; }
+    .radar-col { display:block; }
+    .radar-col > .card:first-of-type, .radar-col > .overview-decision-card, .radar-col > .overview-metric-grid { order:initial; }
+    .radar-col > .card:last-of-type { display:block; }
+    .video-wrapper { min-height:440px; }
+    .video-viewport-card, .video-wrapper { border-radius:12px; }
+    .overview-decision-card, .overview-metric-grid, .overview-lower-grid, .overview-zoom-control { display:none; }
+    @media (max-width:1300px) { .perception-grid { grid-template-columns:320px 1fr; } .radar-col { grid-column:span 2 !important; } }
+    @media (max-width:1049px) { .nav-tabs-bar { overflow-x:auto; } }
   </style>
 </head>
 <body>
@@ -485,14 +668,18 @@
         <div id="masterHudText" class="hud-status-text">90° UNLATCHED (SAFE)</div>
       </div>
       <button id="btnQuickTouch" class="btn btn-warning" style="width: auto; padding: 0.4rem 0.85rem; font-size: 0.78rem;">
-        ✋ Test Handle Touch
+        <span class="ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v6m0-1V9a1.5 1.5 0 0 1 3 0v5.5c0 4.2-2.6 6.5-6.4 6.5h-.8c-2.7 0-4.1-1.2-5.4-3l-2.1-3a1.5 1.5 0 0 1 2.4-1.8L7 15"/></svg></span>
+        Test handle touch
       </button>
     </div>
 
     <!-- Right: Network & Node Indicators -->
     <div class="header-status-group">
       <span class="badge-pill" id="mqttHeaderBadge">
-        <span style="color: var(--status-safe);">●</span> MQTT: broker.emqx.io
+        <span style="color: var(--status-safe);">●</span> BROKER: CONNECTING
+      </span>
+      <span class="badge-pill" id="espHeaderBadge">
+        <span style="color: var(--text-muted);">●</span> ESP32: WAITING
       </span>
       <span class="badge-pill" id="deviceHeaderBadge">
         <span style="color: var(--accent-cyan);">●</span> YOLO26n (CPU)
@@ -516,6 +703,15 @@
     </button>
     <button class="nav-tab-btn" data-tab="tab-digital-twin">
       🌐 Phase 6 Digital Twin
+    </button>
+    <button class="nav-tab-btn" data-tab="tab-ml-advisor">
+      🧠 Phase 7 Risk Advisor
+    </button>
+    <button class="nav-tab-btn" data-tab="tab-command-center">
+      🛰️ Phase 8 Command Center
+    </button>
+    <button class="nav-tab-btn" data-tab="tab-benchmark">
+      📊 Phase 9 Validation
     </button>
   </nav>
 
@@ -550,7 +746,7 @@
             <label class="form-label">Or Upload Custom MP4</label>
             <input type="file" id="fileInput" accept="video/mp4,video/avi" style="display: none;" />
             <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()" style="margin-top: 0.2rem;">
-              📁 Select Video File
+              <span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v10H4z"/><path d="M4 7V5h6l2 2"/></svg></span> Select video file
             </button>
             <div id="uploadFileInfo" style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.35rem; display: none;"></div>
           </div>
@@ -564,7 +760,7 @@
           </div>
 
           <button id="btnProcess" class="btn btn-primary" style="margin-top: 0.5rem;">
-            ▶ Run Perception & TTC Analysis
+            <span class="ui-icon"><svg viewBox="0 0 24 24"><path d="m9 6 9 6-9 6z"/></svg></span> Run perception & TTC analysis
           </button>
 
           <!-- Quick Feedback -->
@@ -576,6 +772,7 @@
           <div class="video-viewport-card">
             <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
               <div style="font-size: 0.85rem; font-weight: 700;">Perception Camera Viewport</div>
+              <div class="overview-zoom-control"><span>Zoom</span><input id="overviewZoom" type="range" min="1" max="1.35" step="0.05" value="1" aria-label="Zoom camera and radar view"><output id="overviewZoomValue">100%</output></div>
               <div id="videoMetaText" style="font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono';">Ready</div>
             </div>
             <div class="video-wrapper">
@@ -618,12 +815,23 @@
 
         <!-- Right: Top-Down BEV Radar & Active Hazards -->
         <div class="radar-col">
+          <div class="overview-decision-card" id="overviewDecisionCard">
+            <div class="overview-decision-title"><span class="decision-dot"></span><span id="overviewDecisionText">CHECKING SAFETY</span></div>
+            <div class="overview-decision-sub" id="overviewDecisionSub">Waiting for the live safety-controller verdict.</div>
+          </div>
+          <div class="overview-metric-grid">
+            <div class="overview-metric"><span class="metric-icon">◷</span><span>TTC</span><strong id="overviewTtc">4.2 s</strong></div>
+            <div class="overview-metric"><span class="metric-icon">↔</span><span>Distance</span><strong id="overviewDistance">8.4 m</strong></div>
+            <div class="overview-metric"><span class="metric-icon">⌁</span><span>Speed</span><strong id="overviewSpeed">18 km/h</strong></div>
+            <div class="overview-metric"><span class="metric-icon">◌</span><span>Radar error</span><strong id="overviewRadarError">0.12 m</strong></div>
+            <div class="overview-metric overview-metric-wide"><span class="metric-icon">▦</span><span>Actuator</span><strong id="overviewActuator">84 ms</strong></div>
+          </div>
           <div class="card" style="margin-bottom: 1.25rem;">
             <div class="card-title">
               <span>Top-Down Bird's-Eye Radar</span>
               <span style="font-size: 0.70rem; color: var(--status-safe); font-family: 'JetBrains Mono';">● 60 FPS SYNC</span>
             </div>
-            <div style="background: #080C14; border-radius: 8px; padding: 0.5rem; display: flex; justify-content: center; border: 1px solid var(--border-subtle);">
+            <div id="bevViewport" style="background: #080C14; border-radius: 8px; padding: 0.5rem; display: flex; justify-content: center; border: 1px solid var(--border-subtle); overflow:hidden;">
               <canvas id="bevCanvas" width="360" height="260" style="max-width: 100%;"></canvas>
             </div>
           </div>
@@ -655,6 +863,10 @@
           </div>
         </div>
 
+      </div>
+      <div class="overview-lower-grid">
+        <div class="overview-panel"><div class="overview-panel-head"><span>Alert timeline</span><span class="live-chip"><i></i> Live</span></div><div class="timeline-row active"><i></i><span id="overviewDecisionTime">Now</span><b id="overviewTimelineDecision">Checking safety controller</b></div><div class="timeline-row"><i></i><span>Live</span><b>Video and radar observation synchronized</b></div><div class="timeline-row"><i></i><span>Live</span><b>Monitoring left rear door corridor</b></div><div class="timeline-row"><i></i><span>Ready</span><b>System ready</b></div></div>
+        <div class="overview-panel explanation-panel"><div class="overview-panel-head"><span class="explain-mark">◌</span><span>Explain this decision</span></div><p id="overviewExplanation">Waiting for the live safety controller to evaluate the currently displayed video frame.</p><button class="btn btn-primary overview-explain-btn">Explain this decision</button></div>
       </div>
     </div>
 
@@ -707,9 +919,10 @@
                 Hardware PWM Pulse: <span id="twinServoPulseText" style="color: var(--accent-cyan); font-family: 'JetBrains Mono';">1500 µs</span>
               </div>
               <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-                <button id="btnManualLock" class="btn btn-secondary" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.72rem;">Force 0° Lock</button>
-                <button id="btnManualUnlock" class="btn btn-secondary" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.72rem;">Force 90° Unlock</button>
+                <button id="btnManualLock" class="btn btn-secondary" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.72rem;">Force 0° lock</button>
+                <button id="btnManualUnlock" class="btn btn-secondary" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.72rem;">Request 90° unlock</button>
               </div>
+              <div id="hardwareActionStatus" style="font-size:.72rem; color:var(--text-muted); margin-top:.55rem; max-width:340px;">Unlock requests remain safety-gated. A blocked request is reported here.</div>
             </div>
           </div>
 
@@ -719,7 +932,7 @@
               <div>
                 <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Capacitive Touch Handle (GPIO 4)</div>
                 <div id="twinHandleText" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 0.2rem;">
-                  ✋ Click / Touch Handle to Test Egress
+                  <span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M7 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v6m0-1V9a1.5 1.5 0 0 1 3 0v5.5c0 4.2-2.6 6.5-6.4 6.5h-.8c-2.7 0-4.1-1.2-5.4-3l-2.1-3a1.5 1.5 0 0 1 2.4-1.8L7 15"/></svg></span> Click / touch handle to test egress
                 </div>
               </div>
               <div id="twinCapacitiveMeter" style="font-family: 'JetBrains Mono'; font-size: 0.85rem; font-weight: 700; color: var(--status-safe); background: rgba(16, 185, 129, 0.15); padding: 0.3rem 0.6rem; border-radius: 6px;">
@@ -734,10 +947,10 @@
           <!-- 3. Radar & Sensors Simulation Buttons -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <button id="btnSimRadarClose" class="btn btn-secondary" style="font-size: 0.75rem;">
-              📡 Send Radar Hazard (1.1m)
+              <span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 0 1 16 0M7 15a5 5 0 0 1 10 0M10 12a2 2 0 0 1 4 0"/><path d="M12 18v2"/></svg></span> Send radar hazard (1.1 m)
             </button>
             <button id="btnSimRadarClear" class="btn btn-secondary" style="font-size: 0.75rem;">
-              📡 Send Radar Clear (5.0m)
+              <span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 0 1 16 0M7 15a5 5 0 0 1 10 0M10 12a2 2 0 0 1 4 0"/><path d="M12 18v2"/></svg></span> Send radar clear (5.0 m)
             </button>
           </div>
 
@@ -869,8 +1082,8 @@
         <div style="display:flex; flex-direction:column; gap:1rem;">
           <div class="card"><div class="card-title"><span>Scenario Control</span></div>
             <select id="twinScenarioSelect" class="select-input" style="width:100%; margin-bottom:.75rem;"></select>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem;"><button id="btnTwinPlay" class="btn btn-primary">▶ Play</button><button id="btnTwinReset" class="btn btn-secondary">↺ Reset</button></div>
-            <button id="btnTwinDoorRequest" class="btn btn-secondary" style="margin-top:.6rem;">🚪 Simulate Left Door Request</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem;"><button id="btnTwinPlay" class="btn btn-primary"><span class="ui-icon"><svg viewBox="0 0 24 24"><path d="m9 6 9 6-9 6z"/></svg></span> Play</button><button id="btnTwinReset" class="btn btn-secondary"><span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2-5"/><path d="M5 5v4h4"/></svg></span> Reset</button></div>
+            <button id="btnTwinDoorRequest" class="btn btn-secondary" style="margin-top:.6rem;"><span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M6 20V5h11v15"/><path d="M10 12h.01"/><path d="M17 9h3v11h-3"/></svg></span> Simulate left-door request</button>
             <div style="font-size:.72rem; color:var(--text-muted); margin-top:.75rem; line-height:1.6;"><strong>Demo:</strong> choose <em>Safe adjacent-lane car</em> → request door → it opens. Choose <em>Fast motorcycle</em> → Play → it stops in red zone → request is vetoed.</div>
           </div>
           <div class="card"><div class="card-title"><span>Ground Truth vs Virtual Radar</span></div>
@@ -883,6 +1096,32 @@
       </div>
     </div>
 
+    <div id="tab-ml-advisor" class="tab-content">
+      <div class="card" style="margin-bottom:1rem; border-color:rgba(139,92,246,.5); background:linear-gradient(90deg,rgba(76,29,149,.22),rgba(15,23,42,.75));">
+        <div class="card-title"><span>Phase 7 — Advisory Machine-Learning Risk Score</span><span style="color:#c4b5fd; font:700 .7rem 'JetBrains Mono';">NEVER CONTROLS THE DOOR</span></div>
+        <p style="font-size:.8rem; color:var(--text-secondary); line-height:1.6;">The Random Forest is trained on controlled virtual experiments. It provides a second opinion; the deterministic door-zone safety engine remains the only lock/unlock authority.</p>
+      </div>
+      <div class="telemetry-row" style="grid-template-columns:repeat(4,1fr); margin-bottom:1rem;">
+        <div class="stat-pill"><div class="stat-label">Experiments</div><div class="stat-value" id="mlExperimentCount">--</div></div>
+        <div class="stat-pill"><div class="stat-label">Accuracy</div><div class="stat-value" id="mlAccuracy" style="color:var(--status-safe);">--</div></div>
+        <div class="stat-pill"><div class="stat-label">Risk Recall</div><div class="stat-value" id="mlRecall" style="color:var(--accent-cyan);">--</div></div>
+        <div class="stat-pill"><div class="stat-label">False-Safe Errors</div><div class="stat-value" id="mlFalseSafe" style="color:var(--status-critical);">--</div></div>
+      </div>
+      <div class="card"><div class="card-title"><span>What the model learned</span></div><div id="mlImportance" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.65rem;"></div></div>
+    </div>
+
+    <div id="tab-command-center" class="tab-content">
+      <div class="card" style="margin-bottom:1rem; border-color:rgba(6,182,212,.45);"><div class="card-title"><span>Phase 8 — DOORSAFE Command Center</span><span id="commandCenterUpdated" style="font:700 .7rem 'JetBrains Mono'; color:var(--accent-cyan);">Waiting…</span></div><p style="font-size:.8rem; color:var(--text-secondary);">One place to explain the live state: deterministic safety authority, physical controller health, recent alerts, and the advisory ML signal.</p></div>
+      <div class="telemetry-row" style="grid-template-columns:repeat(5,1fr); margin-bottom:1rem;"><div class="stat-pill"><div class="stat-label">Safety State</div><div id="commandSafetyState" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">Door</div><div id="commandDoorState" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">ESP32</div><div id="commandEspState" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">MQTT</div><div id="commandMqttState" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">Actuator RTT</div><div id="commandLatency" class="stat-value">--</div></div></div>
+      <div class="hardware-twin-grid"><div class="card"><div class="card-title"><span>Alert Center</span></div><div id="commandAlerts" style="display:flex; flex-direction:column; gap:.55rem; color:var(--text-secondary); font-size:.78rem;">Loading recent evidence…</div></div><div class="card"><div class="card-title"><span>Safety Assistant</span></div><div id="assistantAnswer" style="min-height:72px; color:var(--text-secondary); font-size:.8rem; line-height:1.55;">Ask why the door is locked, how Wokwi works, where Supabase logs are stored, or what the ML model does.</div><div style="display:flex; gap:.5rem; margin-top:.75rem;"><input id="assistantQuestion" class="text-input" placeholder="Why is the door locked?" maxlength="500" style="flex:1;"><button id="btnAssistantAsk" class="btn btn-primary" style="width:auto;">Ask</button></div></div></div>
+    </div>
+
+    <div id="tab-benchmark" class="tab-content">
+      <div class="card" style="margin-bottom:1rem; border-color:rgba(16,185,129,.45);"><div class="card-title"><span>Phase 9 — Engineering Validation</span><button id="btnRunBenchmark" class="btn btn-primary" style="width:auto; padding:.4rem .8rem;"><span class="ui-icon"><svg viewBox="0 0 24 24"><path d="m9 6 9 6-9 6z"/></svg></span> Run 100 experiments</button></div><p style="font-size:.8rem; color:var(--text-secondary); line-height:1.6;">This report measures what the system can prove: simulation latency, virtual-radar distance error, deterministic false-safe rate, and ML test metrics. Hardware MQTT latency is reported separately rather than invented.</p></div>
+      <div class="telemetry-row" style="grid-template-columns:repeat(4,1fr); margin-bottom:1rem;"><div class="stat-pill"><div class="stat-label">Step Mean</div><div id="benchMean" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">Step P95</div><div id="benchP95" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">Radar MAE</div><div id="benchMae" class="stat-value">--</div></div><div class="stat-pill"><div class="stat-label">False-Safe Rate</div><div id="benchFalseSafe" class="stat-value" style="color:var(--status-safe);">--</div></div></div>
+      <div class="card"><div class="card-title"><span>Validation Interpretation</span></div><div id="benchmarkResult" style="font-size:.82rem; color:var(--text-secondary); line-height:1.65;">No report has been run yet.</div></div>
+    </div>
+
   </main>
 
   <script>
@@ -893,6 +1132,8 @@
     let pollInterval = null;
     let fullTelemetryData = null;
     let animationFrameId = null;
+    let lastRenderedFrameIndex = -1;
+    let tabWorkTimer = null;
     let selectedJobId = null;
     let isActuatorLocked = false;
     let lastIoTSyncAt = 0;
@@ -924,6 +1165,9 @@
     const mainVideoPlayer = document.getElementById('mainVideoPlayer');
     const videoPlaceholder = document.getElementById('videoPlaceholder');
     const videoMetaText = document.getElementById('videoMetaText');
+    const overviewZoom = document.getElementById('overviewZoom');
+    const overviewZoomValue = document.getElementById('overviewZoomValue');
+    const bevViewport = document.getElementById('bevViewport');
     const fpsMetric = document.getElementById('fpsMetric');
     const latencyMetric = document.getElementById('latencyMetric');
     const hazardMetric = document.getElementById('hazardMetric');
@@ -935,6 +1179,17 @@
     const bevCtx = bevCanvas.getContext('2d');
     const feedbackBanner = document.getElementById('feedbackBanner');
     const mqttHeaderBadge = document.getElementById('mqttHeaderBadge');
+    const espHeaderBadge = document.getElementById('espHeaderBadge');
+    const overviewDecisionCard = document.getElementById('overviewDecisionCard');
+    const overviewDecisionText = document.getElementById('overviewDecisionText');
+    const overviewDecisionSub = document.getElementById('overviewDecisionSub');
+    const overviewDecisionDot = document.querySelector('.decision-dot');
+    const overviewTtc = document.getElementById('overviewTtc');
+    const overviewDistance = document.getElementById('overviewDistance');
+    const overviewSpeed = document.getElementById('overviewSpeed');
+    const overviewTimelineDecision = document.getElementById('overviewTimelineDecision');
+    const overviewDecisionTime = document.getElementById('overviewDecisionTime');
+    const overviewExplanation = document.getElementById('overviewExplanation');
 
     // Header & Hardware Twin Elements
     const masterHudDot = document.getElementById('masterHudDot');
@@ -951,6 +1206,7 @@
     const btnClearMqttLogs = document.getElementById('btnClearMqttLogs');
     const btnManualLock = document.getElementById('btnManualLock');
     const btnManualUnlock = document.getElementById('btnManualUnlock');
+    const hardwareActionStatus = document.getElementById('hardwareActionStatus');
     const btnSimRadarClose = document.getElementById('btnSimRadarClose');
     const btnSimRadarClear = document.getElementById('btnSimRadarClear');
     const hardwareRadarReadout = document.getElementById('hardwareRadarReadout');
@@ -973,16 +1229,48 @@
     const twinDoorState = document.getElementById('twinDoorState');
     const btnTwinDoorRequest = document.getElementById('btnTwinDoorRequest');
     const twinActionResult = document.getElementById('twinActionResult');
+    const mlExperimentCount = document.getElementById('mlExperimentCount');
+    const mlAccuracy = document.getElementById('mlAccuracy');
+    const mlRecall = document.getElementById('mlRecall');
+    const mlFalseSafe = document.getElementById('mlFalseSafe');
+    const mlImportance = document.getElementById('mlImportance');
+    const commandCenterUpdated = document.getElementById('commandCenterUpdated');
+    const commandSafetyState = document.getElementById('commandSafetyState');
+    const commandDoorState = document.getElementById('commandDoorState');
+    const commandEspState = document.getElementById('commandEspState');
+    const commandMqttState = document.getElementById('commandMqttState');
+    const commandLatency = document.getElementById('commandLatency');
+    const commandAlerts = document.getElementById('commandAlerts');
+    const assistantAnswer = document.getElementById('assistantAnswer');
+    const assistantQuestion = document.getElementById('assistantQuestion');
+    const btnAssistantAsk = document.getElementById('btnAssistantAsk');
+    const btnRunBenchmark = document.getElementById('btnRunBenchmark');
+    const benchMean = document.getElementById('benchMean');
+    const benchP95 = document.getElementById('benchP95');
+    const benchMae = document.getElementById('benchMae');
+    const benchFalseSafe = document.getElementById('benchFalseSafe');
+    const benchmarkResult = document.getElementById('benchmarkResult');
 
     // Navigation Tabs
     document.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        // Render the tab first. Expensive API and WebGL work is deferred so a
+        // click always feels instant, even while the controller is busy.
+        if (tabWorkTimer) clearTimeout(tabWorkTimer);
         document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         const targetId = btn.getAttribute('data-tab');
         document.getElementById(targetId).classList.add('active');
-        if (targetId === 'tab-digital-twin') initializeDigitalTwin();
+        if (targetId === 'tab-perception') startRadarAnimationLoop();
+        else stopRadarAnimationLoop();
+        if (targetId !== 'tab-digital-twin') stopTwin();
+        tabWorkTimer = setTimeout(() => {
+          if (targetId === 'tab-digital-twin') initializeDigitalTwin();
+          if (targetId === 'tab-ml-advisor') loadMlAdvisor();
+          if (targetId === 'tab-command-center') loadCommandCenter();
+          if (targetId === 'tab-recorder') pollFlightRecorder();
+        }, 50);
       });
     });
 
@@ -991,6 +1279,12 @@
     camPitchSlider.addEventListener('input', (e) => camPitchVal.innerText = `${Number(e.target.value).toFixed(1)}°`);
     camFovSlider.addEventListener('input', (e) => camFovVal.innerText = `${Number(e.target.value).toFixed(1)}°`);
     confSlider.addEventListener('input', (e) => confValue.innerText = Number(e.target.value).toFixed(2));
+    overviewZoom?.addEventListener('input', (e) => {
+      const zoom = Number(e.target.value).toFixed(2);
+      document.querySelector('.video-wrapper')?.style.setProperty('--overview-zoom', zoom);
+      bevViewport?.style.setProperty('--overview-zoom', zoom);
+      if (overviewZoomValue) overviewZoomValue.innerText = `${Math.round(Number(zoom) * 100)}%`;
+    });
 
     [camHeightSlider, camPitchSlider, camFovSlider].forEach(slider => {
       slider.addEventListener('change', async () => {
@@ -1130,6 +1424,30 @@
     function setActuatorVisuals(angle, locked, alertMsg = null) {
       isActuatorLocked = locked;
 
+      // This large overview decision is deliberately driven only by the
+      // authoritative safety-controller response. It must never say CLEAR
+      // merely because a cached video frame has no detections.
+      if (overviewDecisionText) {
+        if (locked || angle === 0) {
+          overviewDecisionText.innerText = 'DOOR VETO ACTIVE';
+          overviewDecisionSub.innerText = alertMsg ? 'Safety controller blocked the door request.' : 'Collision risk detected. Door remains locked.';
+          overviewDecisionCard.style.background = '#fff0ef';
+          overviewDecisionCard.style.borderColor = '#f3c8c4';
+          overviewDecisionDot.style.background = '#d92d20';
+          if (overviewTimelineDecision) overviewTimelineDecision.innerText = 'Door VETO ACTIVE — actuator locked';
+          if (overviewExplanation) overviewExplanation.innerText = 'The live safety controller found a road participant or radar interlock inside the protected door-swing corridor. It vetoed the open request and commanded the actuator to remain at 0° locked.';
+        } else {
+          overviewDecisionText.innerText = 'DOOR CLEAR';
+          overviewDecisionSub.innerText = 'Safety controller permits the door to open.';
+          overviewDecisionCard.style.background = '#edf7eb';
+          overviewDecisionCard.style.borderColor = '#d8e8d2';
+          overviewDecisionDot.style.background = '#1a9724';
+          if (overviewTimelineDecision) overviewTimelineDecision.innerText = 'Door CLEAR — opening permitted';
+          if (overviewExplanation) overviewExplanation.innerText = 'The live safety controller found no imminent conflict in the protected door-swing corridor. It permits the latch actuator to open.';
+        }
+        if (overviewDecisionTime) overviewDecisionTime.innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      }
+
       // Rotate SG90 Horn
       if (svgServoHorn) {
         svgServoHorn.style.transform = `rotate(${angle}deg)`;
@@ -1206,18 +1524,23 @@
     interactiveDoorHandle.addEventListener('click', triggerDoorTouch);
 
     async function requestManualActuator(action) {
-      const resp = await fetch('/api/iot/manual-actuator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-      });
-      const data = await resp.json();
-      setActuatorVisuals(
-        data.servo_angle_deg,
-        data.door_locked,
-        data.message || `${action} command ${data.accepted ? 'accepted' : 'blocked by safety'}.`
-      );
-      pollIoTStatus();
+      try {
+        const resp = await fetch('/api/iot/manual-actuator', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        });
+        const data = await resp.json();
+        const message = data.message || `${action} command ${data.accepted ? 'accepted' : 'blocked by safety'}.`;
+        setActuatorVisuals(data.servo_angle_deg, data.door_locked, message);
+        if (hardwareActionStatus) {
+          hardwareActionStatus.innerText = data.accepted ? `Command sent to Wokwi: ${message}` : `Door stayed locked: ${message}`;
+          hardwareActionStatus.style.color = data.accepted ? 'var(--status-safe)' : 'var(--status-critical)';
+        }
+        pollIoTStatus();
+      } catch (err) {
+        if (hardwareActionStatus) { hardwareActionStatus.innerText='Command could not reach the backend.'; hardwareActionStatus.style.color='var(--status-critical)'; }
+      }
     }
 
     btnManualLock.addEventListener('click', () => requestManualActuator('LOCK'));
@@ -1247,13 +1570,20 @@
 
     // BEV Radar & Video Synchronization
     function startRadarAnimationLoop() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) return;
 
       function tick() {
+        const overviewIsVisible = document.getElementById('tab-perception')?.classList.contains('active');
+        if (!overviewIsVisible || document.hidden) { animationFrameId = null; return; }
         syncRadarWithVideo();
         animationFrameId = requestAnimationFrame(tick);
       }
       animationFrameId = requestAnimationFrame(tick);
+    }
+
+    function stopRadarAnimationLoop() {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
     }
 
     function syncRadarWithVideo() {
@@ -1261,8 +1591,13 @@
       const curTime = mainVideoPlayer.currentTime;
       const frame = findClosestFrame(curTime);
       if (frame) {
-        renderBEVFrame(frame);
-        updateLiveTargetsFromFrame(frame);
+        // Rendering a static video frame 60 times each second made navigation
+        // sluggish. Only redraw when the selected video frame actually changes.
+        if (frame.frame_index !== lastRenderedFrameIndex) {
+          lastRenderedFrameIndex = frame.frame_index;
+          renderBEVFrame(frame);
+          updateLiveTargetsFromFrame(frame);
+        }
         const now = performance.now();
         // Synchronize once whenever the displayed frame changes, whether the
         // video is playing, paused, or scrubbed. The frame-index guard prevents
@@ -1336,7 +1671,10 @@
       hazardMetric.innerText = `${frameConflicts}`;
       hazardMetric.style.color = frameMaxUrgency === 'CRITICAL' ? 'var(--status-critical)' : (frameMaxUrgency === 'WARNING' ? 'var(--status-warning)' : 'var(--status-safe)');
       ttcMetric.innerText = frameMinTTC < Infinity ? `${frameMinTTC.toFixed(1)}s` : '--';
-
+      if (overviewTtc) overviewTtc.innerText = frameMinTTC < Infinity ? `${frameMinTTC.toFixed(1)} s` : '--';
+      const nearest = [...frame.objects].sort((a,b)=>(a.distance_m||99)-(b.distance_m||99))[0];
+      if (nearest && overviewDistance) overviewDistance.innerText = `${(nearest.distance_m||0).toFixed(1)} m`;
+      if (nearest && overviewSpeed) overviewSpeed.innerText = `${Math.round((nearest.speed_mps||0)*3.6)} km/h`;
       // Update the HUD only from the live backend decision. The cached safety
       // result embedded in the processed video is illustrative, not authority.
       if (liveFrameSafety) {
@@ -1467,7 +1805,12 @@
 
         if (mqttHeaderBadge) {
           const online = gateway.is_connected === true;
-          mqttHeaderBadge.innerHTML = `<span style="color: ${online ? 'var(--status-safe)' : 'var(--status-critical)'};">●</span> MQTT: ${online ? 'ONLINE' : 'OFFLINE'}`;
+          mqttHeaderBadge.innerHTML = `<span style="color: ${online ? 'var(--status-safe)' : 'var(--status-critical)'};">●</span> BROKER: ${online ? 'ONLINE' : 'OFFLINE'}`;
+        }
+
+        if (espHeaderBadge) {
+          const espOnline = (data.esp32_hardware || {}).online === true;
+          espHeaderBadge.innerHTML = `<span style="color: ${espOnline ? 'var(--status-safe)' : 'var(--status-critical)'};">●</span> ESP32: ${espOnline ? 'ONLINE' : 'OFFLINE'}`;
         }
 
         if (hardwareRadarReadout) {
@@ -1482,9 +1825,15 @@
           }
         }
 
-        // Hardware feedback is authoritative. Until Wokwi acknowledges a command,
-        // show the backend safety decision as the requested state.
-        if (feedback && (!requestedActuator || (
+        // On the perception screen, the selected video's exact-frame decision
+        // is authoritative. A previous physical LOCK acknowledgement describes
+        // hardware position, not collision risk, and must not repaint every
+        // later video frame as dangerous. Other screens continue to show the
+        // latest verified physical actuator state.
+        const perceptionVisible = document.getElementById('tab-perception')?.classList.contains('active');
+        if (perceptionVisible && liveFrameSafety) {
+          setActuatorVisuals(liveFrameSafety.servo_angle_deg, liveFrameSafety.door_locked);
+        } else if (feedback && (!requestedActuator || (
           feedback.session_id === requestedActuator.session_id &&
           feedback.sequence >= requestedActuator.sequence
         ))) {
@@ -1495,8 +1844,11 @@
           setActuatorVisuals(safety.servo_angle_deg, safety.door_locked);
         }
 
-        if (mqttTerminalViewer && gateway.recent_messages) {
-          const msgs = gateway.recent_messages;
+        const hardwareTabVisible = document.getElementById('tab-iot-twin')?.classList.contains('active');
+        if (hardwareTabVisible && mqttTerminalViewer && gateway.recent_messages) {
+          // Never build an unbounded terminal DOM. It was the main reason the
+          // browser stalled after running the system for a while.
+          const msgs = gateway.recent_messages.slice(-30);
           if (msgs.length > 0) {
             let logHtml = '';
             msgs.slice().reverse().forEach(m => {
@@ -1538,7 +1890,14 @@
           recorderCloudStatus.style.color = 'var(--text-muted)';
         }
         if (!events.length) return;
-        recorderEventsBody.innerHTML = events.map(event => {
+        // Radar reports arrive twice a second. Collapse adjacent identical
+        // samples so the event log remains useful and lightweight.
+        const displayedEvents = events.filter((event, index) => {
+          if (event.event_type !== 'RADAR_READING') return true;
+          const prior = events[index - 1];
+          return !prior || prior.event_type !== 'RADAR_READING' || prior.source !== event.source || Math.abs((prior.recorded_at || 0) - (event.recorded_at || 0)) > 2;
+        }).slice(0, 15);
+        recorderEventsBody.innerHTML = displayedEvents.map(event => {
           const evidence = event.payload.reason || event.payload.message || event.payload.distance_m || event.payload.command || '--';
           const safety = event.safety_state || '--';
           const door = event.door_locked === null ? '--' : (event.door_locked ? 'LOCKED' : 'CLEAR');
@@ -1555,7 +1914,7 @@
       twinInitialized=true; twinScene=new THREE.Scene(); twinScene.fog=new THREE.Fog(0x080d1b,18,48);
       twinCamera=new THREE.PerspectiveCamera(48,twinViewport.clientWidth/twinViewport.clientHeight,.1,120);
       twinCamera.position.set(8.8,10.5,12.5); twinCamera.lookAt(-.7,0,-8);
-      twinRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); twinRenderer.setPixelRatio(Math.min(devicePixelRatio,2)); twinRenderer.setSize(twinViewport.clientWidth,twinViewport.clientHeight); twinRenderer.shadowMap.enabled=true; twinRenderer.shadowMap.type=THREE.PCFSoftShadowMap; twinRenderer.setClearColor(0x080d1b,1); twinViewport.prepend(twinRenderer.domElement);
+      twinRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'}); twinRenderer.setPixelRatio(1); twinRenderer.setSize(twinViewport.clientWidth,twinViewport.clientHeight); twinRenderer.shadowMap.enabled=false; twinRenderer.setClearColor(0x080d1b,1); twinViewport.prepend(twinRenderer.domElement);
       twinScene.add(new THREE.HemisphereLight(0x9bc7ff,0x07101c,2.4)); const sun=new THREE.DirectionalLight(0xe9f4ff,2.2); sun.position.set(-8,14,6); sun.castShadow=true; twinScene.add(sun);
       addTwinRoad(); addTwinCar();
       const fov=new THREE.Mesh(new THREE.RingGeometry(.3,6.4,48,1,-.85,1.7),new THREE.MeshBasicMaterial({color:0x22d3ee,transparent:true,opacity:.2,side:THREE.DoubleSide})); fov.rotation.x=-Math.PI/2; fov.position.set(-.91,.025,0); twinScene.add(fov);
@@ -1572,7 +1931,7 @@
       const safety=data.safety||{}; const danger=safety.state==='CRITICAL';
       twinSafetyState.innerText=danger?'⛔ CRITICAL — DOOR VETO':'✓ SAFE — CORRIDOR CLEAR'; twinSafetyState.style.color=danger?'var(--status-critical)':'var(--status-safe)';
       twinDoorState.innerText=safety.door_locked?'LEFT DOOR: LOCKED / 0°':'LEFT DOOR: OPEN / 65°'; twinDoorState.style.color=safety.door_locked?'var(--status-critical)':'var(--status-safe)';
-      btnTwinDoorRequest.innerText=safety.door_open_requested?'🚪 Simulated Request Sent':'🚪 Simulate Left Door Request';
+      btnTwinDoorRequest.innerText=safety.door_open_requested?'Request sent':'Simulate left-door request';
       if(danger) twinActionResult.innerText='VETO: traffic occupies the red left-door swing zone. The simulated latch is forced to 0°.';
       else if(safety.door_open_requested) twinActionResult.innerText='PERMITTED: corridor is clear, so the simulated left door opens to 65°.';
       else twinActionResult.innerText='Door is closed. Send a simulated request to test the safety decision.';
@@ -1604,8 +1963,32 @@
       else {const body=new THREE.Mesh(new THREE.BoxGeometry(.9,.46,1.8),yellow);body.position.y=.42;g.add(body);const roof=new THREE.Mesh(new THREE.BoxGeometry(.7,.28,.9),twinMat(0xffd95c));roof.position.y=.78;g.add(roof);}
       return g;
     }
-    function stopTwin(){twinPlaying=false;if(twinTimer)clearInterval(twinTimer);twinTimer=null;btnTwinPlay.innerText='▶ Play';}
-    btnTwinPlay.addEventListener('click',()=>{if(twinPlaying)return stopTwin();twinPlaying=true;btnTwinPlay.innerText='❚❚ Pause';twinTimer=setInterval(stepTwin,120);}); btnTwinReset.addEventListener('click',resetTwin); btnTwinDoorRequest.addEventListener('click',requestTwinDoor); twinScenarioSelect.addEventListener('change',resetTwin);
+    function stopTwin(){twinPlaying=false;if(twinTimer)clearInterval(twinTimer);twinTimer=null;btnTwinPlay.innerText='Play';}
+    btnTwinPlay.addEventListener('click',()=>{if(twinPlaying)return stopTwin();twinPlaying=true;btnTwinPlay.innerText='Pause';twinTimer=setInterval(stepTwin,120);}); btnTwinReset.addEventListener('click',resetTwin); btnTwinDoorRequest.addEventListener('click',requestTwinDoor); twinScenarioSelect.addEventListener('change',resetTwin);
+
+    async function loadMlAdvisor(){
+      try {
+        const data=await (await fetch('/api/ml/status')).json();
+        mlExperimentCount.innerText=data.experiment_count || '--'; mlAccuracy.innerText=data.accuracy!=null?`${(data.accuracy*100).toFixed(1)}%`:'--'; mlRecall.innerText=data.recall!=null?`${(data.recall*100).toFixed(1)}%`:'--';
+        const cm=data.confusion_matrix?.values || [[0,0],[0,0]]; mlFalseSafe.innerText=cm[1]?.[0] ?? '--';
+        mlImportance.innerHTML=Object.entries(data.feature_importance||{}).sort((a,b)=>b[1]-a[1]).map(([name,value])=>`<div class="stat-pill"><div class="stat-label">${name.replaceAll('_',' ')}</div><div class="stat-value" style="font-size:1rem; color:#c4b5fd;">${(value*100).toFixed(1)}%</div></div>`).join('');
+      } catch(err) { mlImportance.innerHTML='<div style="color:var(--status-warning);font-size:.8rem;">ML API unavailable. Restart the updated backend.</div>'; }
+    }
+    async function loadCommandCenter(){
+      try {
+        const [statusRes, eventsRes]=await Promise.all([fetch('/api/iot/status'),fetch('/api/events?limit=8')]);
+        const status=await statusRes.json(), events=(await eventsRes.json()).events||[];
+        const safety=status.safety||{}, mqtt=status.mqtt_gateway||{}, esp=status.esp32_hardware||{};
+        commandSafetyState.innerText=safety.safety_state||'UNKNOWN'; commandSafetyState.style.color=safety.door_locked?'var(--status-critical)':'var(--status-safe)'; commandDoorState.innerText=safety.door_locked?'LOCKED':'CLEAR'; commandDoorState.style.color=safety.door_locked?'var(--status-critical)':'var(--status-safe)'; commandEspState.innerText=esp.online?'ONLINE':'OFFLINE'; commandMqttState.innerText=mqtt.is_connected?'ONLINE':'OFFLINE'; commandLatency.innerText=status.actuator_feedback?.round_trip_ms!=null?`${status.actuator_feedback.round_trip_ms} ms`:'--'; commandCenterUpdated.innerText=`Updated ${new Date().toLocaleTimeString()}`;
+        commandAlerts.innerHTML=events.length?events.map(e=>`<div style="padding:.55rem .65rem; border-left:3px solid ${e.door_locked?'var(--status-critical)':'var(--accent-cyan)'}; background:rgba(15,23,42,.7);"><strong>${e.event_type}</strong> · ${e.safety_state||'telemetry'}<br><span style="color:var(--text-muted);">${e.payload?.reason||e.payload?.message||'Recorded vehicle evidence'}</span></div>`).join(''):'<span>No events recorded yet.</span>';
+      } catch(err){ commandAlerts.innerText='Command-center API unavailable. Restart the updated backend.'; }
+    }
+    btnAssistantAsk.addEventListener('click', async ()=>{ const question=assistantQuestion.value.trim(); if(!question)return; assistantAnswer.innerText='Thinking…'; try { const data=await (await fetch('/api/assistant/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})})).json(); assistantAnswer.innerText=data.answer; } catch(err){ assistantAnswer.innerText='Assistant unavailable.'; } });
+    assistantQuestion.addEventListener('keydown',e=>{if(e.key==='Enter')btnAssistantAsk.click();});
+    btnRunBenchmark.addEventListener('click', async ()=>{
+      btnRunBenchmark.disabled=true; btnRunBenchmark.innerText='Running…'; benchmarkResult.innerText='Generating reproducible experiments…';
+      try { const d=await (await fetch('/api/benchmark/run?iterations=100',{method:'POST'})).json(); benchMean.innerText=`${d.simulation_step_latency_ms.mean} ms`; benchP95.innerText=`${d.simulation_step_latency_ms.p95} ms`; benchMae.innerText=d.virtual_radar_distance_mae_m==null?'--':`${d.virtual_radar_distance_mae_m} m`; benchFalseSafe.innerText=`${(d.deterministic_false_safe_rate*100).toFixed(1)}%`; benchmarkResult.innerText=`${d.iterations} runs completed. The deterministic controller checked ${d.danger_frames_checked} danger frames and produced a ${(d.deterministic_false_safe_rate*100).toFixed(1)}% false-safe rate. The virtual radar mean absolute error was ${d.virtual_radar_distance_mae_m} m. ${d.limitations[1]}`; } catch(err) { benchmarkResult.innerText='Benchmark API unavailable. Restart the updated backend.'; } finally { btnRunBenchmark.disabled=false; btnRunBenchmark.innerText='Run 100 experiments'; }
+    });
 
     // Initial Loaders
     async function loadSamples() {
@@ -1677,9 +2060,12 @@
     loadSamples();
     loadExistingJobs(true);
     pollIoTStatus();
-    pollFlightRecorder();
+    // Flight-recorder rows are fetched only when their tab is open. The
+    // summary is persistent, so polling it in the background adds no value.
     setInterval(pollIoTStatus, 2500);
-    setInterval(pollFlightRecorder, 3000);
+    setInterval(() => {
+      if (document.getElementById('tab-recorder')?.classList.contains('active')) pollFlightRecorder();
+    }, 15000);
   </script>
 </body>
 </html>

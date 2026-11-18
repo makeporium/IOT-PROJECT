@@ -35,11 +35,21 @@ class SafetyManager:
         self.total_lock_vetoes: int = 0
         self.total_door_openings: int = 0
         self.last_fail_safe_reason: Optional[str] = None
+        # The source of the currently displayed/evaluated frame matters for
+        # freshness. A paused recorded frame remains an intentional snapshot;
+        # a live camera stream must continue producing telemetry.
+        self.active_source_mode: Optional[str] = None
 
-    def process_frame(self, objects: List[Dict[str, Any]], timestamp_sec: float) -> SafetyFrameResult:
+    def process_frame(
+        self,
+        objects: List[Dict[str, Any]],
+        timestamp_sec: float,
+        source_mode: str = "LIVE",
+    ) -> SafetyFrameResult:
         """Processes live or recorded frame telemetry through the deterministic state machine."""
         result = self.state_machine.update(objects, timestamp_sec)
         self.active_frame_result = result
+        self.active_source_mode = source_mode
 
         # Check for state transition event to log
         if result.current_state != result.previous_state:
@@ -63,7 +73,19 @@ class SafetyManager:
     def trigger_handle_touch(self, is_touched: bool, objects: Optional[List[Dict[str, Any]]] = None) -> DoorHandleResponse:
         """Simulates or receives physical capacitive touch on the passenger door handle."""
         self.is_handle_touch_active = is_touched
-        response = self.state_machine.handle_touch_trigger(is_touched, objects)
+        # Recorded/demo video is deliberately inspectable while paused. Its
+        # selected frame is not a failed sensor merely because the user waited
+        # more than the live-camera watchdog interval before touching Wokwi.
+        keep_snapshot_valid = (
+            objects is None
+            and self.active_frame_result is not None
+            and self.active_source_mode in {"RECORDED_DEMO", "SIMULATION"}
+        )
+        response = self.state_machine.handle_touch_trigger(
+            is_touched,
+            objects,
+            enforce_timeout=not keep_snapshot_valid,
+        )
         self.last_handle_response = response
 
         if is_touched:
@@ -151,6 +173,7 @@ class SafetyManager:
         self.is_handle_touch_active = False
         self.last_handle_response = None
         self.last_fail_safe_reason = None
+        self.active_source_mode = None
         logger.info("SafetyManager reset to clean baseline state.")
 
 

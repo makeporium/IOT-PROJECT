@@ -35,6 +35,9 @@ from app.api.routes_safety import router as safety_router
 from app.api.routes_iot import router as iot_router
 from app.api.routes_events import router as events_router
 from app.api.routes_twin import router as twin_router
+from app.api.routes_ml import router as ml_router
+from app.api.routes_assistant import router as assistant_router
+from app.api.routes_benchmark import router as benchmark_router
 from app.api.routes_video import get_detector
 
 # Setup logging
@@ -117,6 +120,9 @@ app.include_router(safety_router, prefix=settings.API_V1_STR)
 app.include_router(iot_router, prefix=settings.API_V1_STR)
 app.include_router(events_router, prefix=settings.API_V1_STR)
 app.include_router(twin_router, prefix=settings.API_V1_STR)
+app.include_router(ml_router, prefix=settings.API_V1_STR)
+app.include_router(assistant_router, prefix=settings.API_V1_STR)
+app.include_router(benchmark_router, prefix=settings.API_V1_STR)
 
 # Also expose under /api/v1 for standard REST client conventions
 if settings.API_V1_STR != "/api/v1":
@@ -127,6 +133,9 @@ if settings.API_V1_STR != "/api/v1":
     app.include_router(iot_router, prefix="/api/v1")
     app.include_router(events_router, prefix="/api/v1")
     app.include_router(twin_router, prefix="/api/v1")
+    app.include_router(ml_router, prefix="/api/v1")
+    app.include_router(assistant_router, prefix="/api/v1")
+    app.include_router(benchmark_router, prefix="/api/v1")
 
 # Mount static web UI, sample videos, and processed outputs
 static_dir = Path(__file__).resolve().parent / "app" / "static"

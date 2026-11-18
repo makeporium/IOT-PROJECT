@@ -127,7 +127,7 @@ def test_actuator_feedback_updates_verified_hardware_state():
     assert status["actuator_feedback"]["door_locked"] is True
 
 
-def test_offline_heartbeat_forces_fail_safe_lock():
+def test_offline_heartbeat_locks_hardware_without_corrupting_camera_state():
     mqtt_client = DoorSafeMQTTClient(client_id="test_fail_safe_client")
     safety_mgr = SafetyManager()
     bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=safety_mgr)
@@ -138,9 +138,75 @@ def test_offline_heartbeat_forces_fail_safe_lock():
         "uptime_seconds": 10,
     })
 
-    assert safety_mgr.state_machine.state == SafetyState.FAIL_SAFE
-    assert safety_mgr.state_machine.servo_angle_deg == 0
+    # Network health must not masquerade as a video collision classification.
+    assert safety_mgr.state_machine.state == SafetyState.SAFE
     assert mqtt_client.recent_messages[-1]["payload"]["command"] == "FAIL_SAFE_LOCK"
+
+    # A subsequent clear frame remains SAFE even while the hardware status is
+    # independently shown as offline.
+    result = bridge.process_observations([], timestamp_sec=1.0)
+    assert result.current_state == SafetyState.SAFE
+    assert result.is_door_locked is False
+
+
+def test_sensor_packet_clears_stale_offline_lwt():
+    mqtt_client = DoorSafeMQTTClient(client_id="test_lwt_recovery")
+    bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=SafetyManager())
+    bridge._handle_incoming_heartbeat({
+        "device_id": "esp32_driver_door", "status": "OFFLINE", "uptime_seconds": 2,
+    })
+    assert bridge._controller_reported_offline is True
+
+    bridge._handle_incoming_touch({
+        "device_id": "esp32_driver_door", "timestamp": 3.0, "touched": False,
+    })
+    assert bridge._controller_reported_offline is False
+    assert bridge.get_hardware_status()["esp32_hardware"]["online"] is True
+
+
+def test_delayed_lwt_from_old_wokwi_tab_does_not_override_live_controller():
+    mqtt_client = DoorSafeMQTTClient(client_id="test_stale_duplicate_lwt")
+    bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=SafetyManager())
+    bridge._handle_incoming_radar({
+        "device_id": "esp32_rear_radar",
+        "timestamp": 5.0,
+        "distance_cm": 300.0,
+        "distance_m": 3.0,
+    })
+    published_before = len(mqtt_client.recent_messages)
+
+    bridge._handle_incoming_heartbeat({
+        "device_id": "esp32_driver_door", "status": "OFFLINE",
+    })
+
+    assert bridge._controller_reported_offline is False
+    assert bridge.last_esp32_heartbeat["status"] == "ONLINE"
+    assert len(mqtt_client.recent_messages) == published_before
+
+
+def test_latest_command_is_replayed_once_when_wokwi_recovers():
+    mqtt_client = DoorSafeMQTTClient(client_id="test_recovery_replay")
+    bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=SafetyManager())
+    bridge._handle_incoming_radar({
+        "device_id": "esp32_rear_radar", "timestamp": 1.0,
+        "distance_cm": 300.0, "distance_m": 3.0,
+    })
+    bridge._publish_actuator_command(
+        command="UNLOCK_PERMITTED", servo_angle_deg=90,
+        door_locked=False, chime_alert=False, reason="clear frame",
+        source_mode="LIVE_TOUCH",
+    )
+    bridge.last_esp32_heartbeat["received_at"] -= 10.0
+    sequence_before = bridge.last_actuator_command["sequence"]
+
+    bridge._handle_incoming_radar({
+        "device_id": "esp32_rear_radar", "timestamp": 11.0,
+        "distance_cm": 300.0, "distance_m": 3.0,
+    })
+
+    assert bridge.last_actuator_command["source_mode"] == "RECOVERY_REPLAY"
+    assert bridge.last_actuator_command["sequence"] == sequence_before + 1
+    assert bridge.last_actuator_command["servo_angle_deg"] == 90
 
 
 def test_iot_bridge_safety_sync():
@@ -234,6 +300,26 @@ def test_esp32_touch_permits_unlatch_when_clear():
     assert last_msg["payload"]["servo_angle_deg"] == 90
     assert last_msg["payload"]["door_locked"] is False
     assert last_msg["payload"]["command"] == "UNLOCK_PERMITTED"
+
+
+def test_paused_recorded_frame_remains_valid_for_physical_touch():
+    """A deliberate paused demo frame must not expire like a live camera feed."""
+    mqtt_client = DoorSafeMQTTClient(client_id="test_paused_recording")
+    safety_mgr = SafetyManager()
+    bridge = IoTBridge(mqtt_client=mqtt_client, safety_manager=safety_mgr)
+
+    result = bridge.process_observations([], timestamp_sec=2.0, source_mode="RECORDED_DEMO")
+    assert result.current_state == SafetyState.SAFE
+
+    # Simulate a long pause without slowing the test.
+    safety_mgr.state_machine.last_sensor_update_time -= 60.0
+    bridge._handle_incoming_touch({
+        "device_id": "esp32_driver_door", "timestamp": 62.0, "touched": True,
+    })
+
+    last_msg = mqtt_client.recent_messages[-1]
+    assert last_msg["payload"]["command"] == "UNLOCK_PERMITTED"
+    assert last_msg["payload"]["servo_angle_deg"] == 90
 
 
 def test_iot_rest_api_endpoints():

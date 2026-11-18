@@ -31,6 +31,15 @@ logger = logging.getLogger("doorsafe.iot.bridge")
 # analysis, but blocks a handle request while a fresh object is in its beam.
 RADAR_INTERLOCK_DISTANCE_M = 1.20
 RADAR_FRESHNESS_S = 2.0
+# Public MQTT brokers may deliver a delayed LWT from an older Wokwi tab that
+# used the same logical device name. Fresh packets from the active controller
+# prove that such an OFFLINE packet is stale and must not override a command.
+STALE_LWT_GRACE_S = 6.0
+CONTROLLER_RECOVERY_GAP_S = 4.0
+# Wokwi's simulated pushbutton bounces: a single press can emit several rapid
+# touched=True edges with no hardware debounce. Collapse repeats into one
+# actuator decision instead of firing a new command per bounce.
+TOUCH_DEBOUNCE_S = 0.4
 
 
 class IoTBridge:
@@ -58,6 +67,7 @@ class IoTBridge:
         self._session_id = str(uuid.uuid4())
         self._last_safety_command_signature: Optional[tuple] = None
         self._last_safety_command_time = 0.0
+        self._last_touch_trigger_time = 0.0
         self._controller_reported_offline = False
         self._last_recorded_safety_signature: Optional[tuple] = None
 
@@ -123,6 +133,10 @@ class IoTBridge:
             logger.warning("Rejected invalid ESP32 touch payload: %s", exc)
             return
 
+        # A real sensor event proves that the current controller connection is
+        # alive, even if an older Wokwi session just emitted a stale LWT.
+        self._mark_controller_alive(touch.device_id)
+
         touched = touch.touched
         logger.info(f"ESP32 Capacitive Handle Touch Event: touched={touched}")
 
@@ -130,6 +144,13 @@ class IoTBridge:
             self.safety.is_handle_touch_active = False
             self._record_event("HANDLE_TOUCH", "ESP32", touch.model_dump())
             return
+
+        # Debounce: a bouncing switch can emit several touched=True edges for
+        # one physical press. Ignore repeats within the debounce window.
+        now = time.time()
+        if now - self._last_touch_trigger_time < TOUCH_DEBOUNCE_S:
+            return
+        self._last_touch_trigger_time = now
 
         # A fresh close ultrasonic echo is independent physical evidence in
         # the door-side beam. It has priority over a camera "clear" result.
@@ -192,6 +213,7 @@ class IoTBridge:
         except Exception as exc:
             logger.warning("Rejected invalid radar payload: %s", exc)
             return
+        self._mark_controller_alive(radar.device_id)
         self.last_radar_reading = {
             **radar.model_dump(),
             "received_at": time.time(),
@@ -217,18 +239,33 @@ class IoTBridge:
         device_id = payload.get("device_id", "")
         # Only record foreign controller heartbeats (skip backend's own heartbeat)
         if "backend" not in device_id:
-            self._controller_reported_offline = payload.get("status") == "OFFLINE"
+            status = payload.get("status", "ONLINE")
+            if status == "OFFLINE" and self.last_esp32_heartbeat:
+                last_seen = float(self.last_esp32_heartbeat.get("received_at", 0.0))
+                last_status = self.last_esp32_heartbeat.get("status")
+                if last_status == "ONLINE" and time.time() - last_seen <= STALE_LWT_GRACE_S:
+                    logger.info(
+                        "Ignored stale duplicate-session OFFLINE LWT for %s; "
+                        "active controller telemetry is fresh",
+                        device_id,
+                    )
+                    return
+
+            self._controller_reported_offline = status == "OFFLINE"
             self.last_esp32_heartbeat = {
                 "received_at": time.time(),
                 "device_id": device_id,
-                "status": payload.get("status", "ONLINE"),
+                "status": status,
                 "uptime_seconds": payload.get("uptime_seconds", 0),
                 "free_heap_bytes": payload.get("free_heap_bytes"),
                 "firmware_version": payload.get("firmware_version", "unknown")
             }
             logger.info(f"ESP32 Heartbeat received from {device_id} (uptime: {payload.get('uptime_seconds')}s)")
-            if payload.get("status") == "OFFLINE":
-                self.safety.force_fail_safe("ESP32 heartbeat reported OFFLINE")
+            if status == "OFFLINE":
+                # Do not overwrite the camera's collision classification with
+                # a network-health condition. The physical latch still gets a
+                # fail-safe lock command, while the UI can truthfully show the
+                # current video frame as SAFE/WARNING/CRITICAL.
                 self._publish_actuator_command(
                     command="FAIL_SAFE_LOCK",
                     servo_angle_deg=0,
@@ -238,16 +275,62 @@ class IoTBridge:
                     source_mode="FAIL_SAFE",
                 )
 
+    def _mark_controller_alive(self, device_id: str) -> None:
+        """Clear stale OFFLINE state when any genuine ESP32 packet arrives."""
+        previous_seen_at = 0.0
+        if self.last_esp32_heartbeat:
+            previous_seen_at = float(self.last_esp32_heartbeat.get("received_at", 0.0))
+        recovered_after_gap = (
+            previous_seen_at > 0.0
+            and time.time() - previous_seen_at > CONTROLLER_RECOVERY_GAP_S
+        )
+        self._controller_reported_offline = False
+        now = time.time()
+        if self.last_esp32_heartbeat is None:
+            self.last_esp32_heartbeat = {
+                "received_at": now,
+                "device_id": device_id,
+                "status": "ONLINE",
+                "uptime_seconds": 0,
+                "free_heap_bytes": None,
+                "firmware_version": "unknown",
+            }
+        else:
+            self.last_esp32_heartbeat["received_at"] = now
+            self.last_esp32_heartbeat["status"] = "ONLINE"
+
+        # A browser may throttle a background Wokwi tab long enough for MQTT
+        # to disconnect. Commands published during that gap are not retained,
+        # so replay the latest requested actuator state once when fresh ESP32
+        # telemetry proves the controller has recovered.
+        if recovered_after_gap and self.last_actuator_command:
+            previous = dict(self.last_actuator_command)
+            self._publish_actuator_command(
+                command=previous["command"],
+                servo_angle_deg=previous["servo_angle_deg"],
+                door_locked=previous["door_locked"],
+                chime_alert=False,
+                reason=f"Controller recovered; replaying latest state: {previous['reason']}",
+                source_mode="RECOVERY_REPLAY",
+            )
+
     def _handle_actuator_state(self, payload: Dict[str, Any]):
         try:
             feedback = ActuatorStatePayload.model_validate(payload)
         except Exception as exc:
             logger.warning("Rejected invalid actuator feedback: %s", exc)
             return
+        self._mark_controller_alive(feedback.device_id)
         self.last_actuator_feedback = {
             **feedback.model_dump(),
             "received_at": time.time(),
         }
+        if self.last_actuator_command and self.last_actuator_command.get("command_id") == feedback.command_id:
+            sent_at = float(self.last_actuator_command.get("timestamp", 0.0))
+            if sent_at:
+                self.last_actuator_feedback["round_trip_ms"] = round(
+                    max(0.0, (self.last_actuator_feedback["received_at"] - sent_at) * 1000), 1
+                )
         self._record_event(
             "ACTUATOR_ACKNOWLEDGEMENT",
             feedback.device_id,
@@ -334,14 +417,13 @@ class IoTBridge:
         """Updates the one authoritative safety manager and synchronizes MQTT."""
         # The coordinator may receive video-relative, epoch, and controller-uptime
         # timestamps. Use one monotonic clock for safety hysteresis.
-        result = self.safety.process_frame(objects=objects, timestamp_sec=time.monotonic())
-        if self._controller_reported_offline:
-            self.safety.force_fail_safe("ESP32 remains offline")
-            result.current_state = SafetyState.FAIL_SAFE
-            result.actuator_command = ActuatorCommand.FAIL_SAFE_LOCK
-            result.servo_angle_deg = 0
-            result.is_door_locked = True
-            result.fail_safe_active = True
+        result = self.safety.process_frame(
+            objects=objects,
+            timestamp_sec=time.monotonic(),
+            source_mode=source_mode,
+        )
+        # MQTT availability is reported independently by /api/iot/status.
+        # It must never turn every video frame into a false collision warning.
         self.sync_safety_state(result, source_mode=source_mode)
         return result
 

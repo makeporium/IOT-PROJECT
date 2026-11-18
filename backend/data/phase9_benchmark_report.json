@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-11-15T18:44:55.971604+00:00",
+  "iterations": 20,
+  "simulation_step_latency_ms": {
+    "mean": 0.027,
+    "p95": 0.043
+  },
+  "virtual_radar_distance_mae_m": 0.162,
+  "deterministic_false_safe_rate": 0.0,
+  "danger_frames_checked": 0,
+  "ml": {
+    "experiment_count": 300,
+    "test_count": 75,
+    "accuracy": 0.987,
+    "precision": 0.917,
+    "recall": 1.0,
+    "confusion_matrix": {
+      "labels": [
+        "CLEAR",
+        "RISK"
+      ],
+      "values": [
+        [
+          63,
+          1
+        ],
+        [
+          0,
+          11
+        ]
+      ]
+    },
+    "feature_importance": {
+      "distance_m": 0.042,
+      "speed_mps": 0.095,
+      "lateral_offset_m": 0.528,
+      "ttc_s": 0.163,
+      "radar_distance_m": 0.048,
+      "radar_speed_mps": 0.089,
+      "measurement_uncertainty_m": 0.036
+    },
+    "advisory_only": true
+  },
+  "limitations": [
+    "Radar error is virtual sensor error, not a real HC-SR04 laboratory measurement.",
+    "IoT round-trip latency requires a live hardware session and is not inferred here."
+  ]
+}

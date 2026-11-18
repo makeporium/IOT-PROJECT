@@ -199,7 +199,12 @@ class SafetyStateMachine:
             fail_safe_active=(self.state == SafetyState.FAIL_SAFE)
         )
 
-    def handle_touch_trigger(self, is_touched: bool, objects: Optional[List[Dict[str, Any]]] = None) -> DoorHandleResponse:
+    def handle_touch_trigger(
+        self,
+        is_touched: bool,
+        objects: Optional[List[Dict[str, Any]]] = None,
+        enforce_timeout: bool = True,
+    ) -> DoorHandleResponse:
         """
         Evaluates a passenger door-handle touch event against current safety state.
         This represents the physical interaction before opening the door.
@@ -212,7 +217,7 @@ class SafetyStateMachine:
             self.update(objects, frame_timestamp_s=time.time())
 
         # Check sensor timeout (fail-safe trigger) only if watchdog is explicitly enabled
-        if self.enable_sensor_timeout:
+        if self.enable_sensor_timeout and enforce_timeout:
             time_since_last_sensor = time.perf_counter() - self.last_sensor_update_time
             if time_since_last_sensor > self.sensor_timeout_s:
                 self.force_fail_safe()

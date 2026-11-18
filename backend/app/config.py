@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     
     # Server configuration
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8080
     DEBUG: bool = True
     
     # IoT MQTT Broker Configuration (Phase 4)
@@ -55,9 +55,8 @@ class Settings(BaseSettings):
     MQTT_KEEPALIVE: int = 60
     # Kept private to this course project. A generic public topic lets unrelated
     # Wokwi viewers publish actuator commands into the same demonstration.
-    # Versioned namespace: prevents stale demo servers (or other public MQTT
-    # clients) from commanding this project's ESP32 actuator.
-    MQTT_TOPIC_PREFIX: str = "doorsafe/ayush/vehicle_door_demo_v2"
+    # Must match the topic strings hardcoded in the Wokwi ESP32 sketch exactly.
+    MQTT_TOPIC_PREFIX: str = "doorsafe/ayush/vehicle_door_demo"
 
     # Phase 5: local, durable vehicle event recorder. SQLite requires no
     # account or network and is the fallback store for later cloud sync.
