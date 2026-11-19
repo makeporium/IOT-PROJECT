@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     SUPABASE_PUBLISHABLE_KEY: Optional[str] = None
     SUPABASE_EVENTS_TABLE: str = "vehicle_events"
     
-    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=str(BACKEND_DIR / ".env"), extra="ignore")
 
 # Instantiate singleton settings
 settings = Settings()

@@ -1138,10 +1138,6 @@
     let isActuatorLocked = false;
     let lastIoTSyncAt = 0;
     let lastSyncedFrameIndex = -1;
-    // This is the live decision returned by the backend for the exact frame
-    // on screen. Do not trust the historic `frame.safety` field: it belongs
-    // to the original analysis run and may predate a rule/calibration change.
-    let liveFrameSafety = null;
 
     // Elements
     const sampleSelect = document.getElementById('sampleVideoSelect');
@@ -1308,7 +1304,6 @@
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      selectedMode = 'UPLOAD';
       const formData = new FormData();
       formData.append('file', file);
       uploadFileInfo.innerText = `Uploading ${file.name}...`;
@@ -1317,10 +1312,17 @@
       try {
         const res = await fetch('/api/video/upload', { method: 'POST', body: formData });
         const data = await res.json();
-        uploadedFilename = data.filename;
-        uploadFileInfo.innerText = `Uploaded: ${file.name} (${(file.size / (1024*1024)).toFixed(1)} MB)`;
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        // Reload the samples dropdown and auto-select the new file so the
+        // user can preview it raw straight away, just like any benchmark video.
+        await loadSamples();
+        sampleSelect.value = data.filename;
+        sampleSelect.dispatchEvent(new Event('change'));
+        uploadFileInfo.innerText = `Added to benchmark list: ${data.filename}`;
+        uploadFileInfo.style.color = 'var(--accent-cyan)';
       } catch (err) {
-        uploadFileInfo.innerText = 'Upload failed!';
+        uploadFileInfo.innerText = `Upload failed: ${err.message}`;
+        uploadFileInfo.style.color = 'var(--status-critical)';
       }
     });
 
@@ -1349,6 +1351,7 @@
           body: JSON.stringify(payload)
         });
         const job = await res.json();
+        if (!res.ok) throw new Error(job.detail || `HTTP ${res.status}`);
         currentJobId = job.job_id;
         selectedJobId = job.job_id;
         pollJobProgress(currentJobId);
@@ -1364,6 +1367,7 @@
       pollInterval = setInterval(async () => {
         try {
           const res = await fetch(`/api/video/jobs/${jobId}`);
+          if (!res.ok) throw new Error(`job poll HTTP ${res.status}`);
           const job = await res.json();
 
           progressPercentText.innerText = `${job.progress_percent}%`;
@@ -1390,30 +1394,86 @@
       }, 500);
     }
 
+    // Without telemetry the sync loop cannot repaint anything, so every
+    // readout must be cleared explicitly. Otherwise the HUD, radar and target
+    // list keep describing whatever video was loaded before.
+    function resetPerceptionReadouts() {
+      lastRenderedFrameIndex = -1;
+      lastSyncedFrameIndex = -1;
+      setActuatorVisuals(90, false);
+      hazardMetric.innerText = '0';
+      hazardMetric.style.color = 'var(--status-safe)';
+      ttcMetric.innerText = '--';
+      renderBEVFrame(null);
+      renderTargetsTable(null);
+    }
+
+    async function fetchTelemetryWithRetry(jobId, attempts = 3) {
+      let lastErr;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          // A FastAPI error body ({detail: ...}) parses as valid JSON, so an
+          // unchecked response would be stored as telemetry and leave the
+          // dashboard blind: empty radar and target list, HUD frozen on a stale
+          // verdict, while the annotated video still plays over the top of it.
+          const telRes = await fetch(`/api/video/jobs/${jobId}/telemetry`);
+          if (!telRes.ok) throw new Error(`telemetry HTTP ${telRes.status}`);
+          const payload = await telRes.json();
+          if (!payload || !Array.isArray(payload.frames) || payload.frames.length === 0) {
+            throw new Error('telemetry payload has no frames');
+          }
+          return payload;
+        } catch (err) {
+          lastErr = err;
+          // A dev server restart or a brief network blip is the common case —
+          // short retries recover without the user having to do anything.
+          if (i < attempts - 1) await new Promise(r => setTimeout(r, 400));
+        }
+      }
+      throw lastErr;
+    }
+
     async function onJobComplete(job) {
       selectedJobId = job.job_id;
       try {
-        const telRes = await fetch(`/api/video/jobs/${job.job_id}/telemetry`);
-        fullTelemetryData = await telRes.json();
-        jsonViewer.innerText = JSON.stringify(fullTelemetryData, null, 2);
-        renderTargetsTable(fullTelemetryData);
+        fullTelemetryData = await fetchTelemetryWithRetry(job.job_id);
       } catch (err) {
         console.error('Failed to load telemetry:', err);
+        fullTelemetryData = null;
+        resetPerceptionReadouts();
+        jsonViewer.innerText = `Telemetry unavailable for this run (${err.message}).`;
+        videoMetaText.innerHTML = `${job.filename} • telemetry unavailable — <a href="#" onclick="onJobComplete(${JSON.stringify(job).replace(/"/g, '&quot;')}); return false;" style="color: var(--accent-cyan);">retry</a>`;
+        // fall through — still load and play the annotated video
       }
 
-      fpsMetric.innerText = `${job.fps}`;
-      latencyMetric.innerText = `${job.avg_latency_ms} ms`;
-      videoMetaText.innerText = `${job.filename} • ${job.total_frames} frames`;
+      if (fullTelemetryData) {
+        fpsMetric.innerText = `${job.fps}`;
+        latencyMetric.innerText = `${job.avg_latency_ms} ms`;
+        videoMetaText.innerText = `${job.filename} • ${job.total_frames} frames`;
+        // Render outside the fetch try-catch so a table/JSON error can't
+        // silently reset fullTelemetryData and blank the BEV.
+        try { jsonViewer.innerText = JSON.stringify(fullTelemetryData, null, 2); } catch(_) {}
+        try { renderTargetsTable(fullTelemetryData); } catch(_) {}
+      }
 
       mainVideoPlayer.pause();
       mainVideoPlayer.removeAttribute('src');
       mainVideoPlayer.load();
 
-      mainVideoPlayer.src = `/outputs/${job.job_id}_annotated.mp4`;
-      videoPlaceholder.style.display = 'none';
-      mainVideoPlayer.style.display = 'block';
+      mainVideoPlayer.style.display = 'none';
+      videoPlaceholder.style.display = 'block';
+      videoPlaceholder.innerText = 'Loading video...';
 
-      mainVideoPlayer.onloadedmetadata = () => {
+      // Clear any onerror left over from a raw-preview so it doesn't
+      // swallow a decode error on the annotated video with the wrong message.
+      mainVideoPlayer.onerror = () => {
+        videoPlaceholder.innerText = `Annotated video not found for job ${job.job_id}.`;
+      };
+      mainVideoPlayer.src = `/outputs/${job.job_id}_annotated.mp4`;
+
+      mainVideoPlayer.onloadeddata = () => {
+        videoPlaceholder.style.display = 'none';
+        mainVideoPlayer.style.display = 'block';
         mainVideoPlayer.play().catch(e => console.log('Autoplay deferred:', e));
       };
 
@@ -1482,6 +1542,19 @@
 
     // Interactive Capacitive Touch Trigger Handler
     async function triggerDoorTouch() {
+      // No telemetry for the loaded run means we have no idea what's in frame
+      // right now. Evaluating with an empty object list would read as "clear"
+      // and unlock the door regardless of what the burned-in video overlay
+      // shows -- a real run of this would rather fail loud than fail unlocked.
+      if (!fullTelemetryData) {
+        if (feedbackBanner) {
+          feedbackBanner.style.display = 'block';
+          feedbackBanner.className = 'feedback-banner feedback-critical';
+          feedbackBanner.innerHTML = '<strong>⛔ CANNOT EVALUATE</strong><br>No telemetry loaded for this run — handle-touch refused rather than assumed safe.';
+        }
+        return;
+      }
+
       const curTime = mainVideoPlayer ? mainVideoPlayer.currentTime : 0;
       const currentFrame = findClosestFrame(curTime);
       const activeObjs = currentFrame ? (currentFrame.objects || []) : [];
@@ -1570,12 +1643,15 @@
 
     // BEV Radar & Video Synchronization
     function startRadarAnimationLoop() {
-      if (animationFrameId) return;
+      // Cancel any stale handle (loop may have died mid-tick, leaving a non-null
+      // but already-fired ID that the guard below would treat as "still running").
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
 
       function tick() {
         const overviewIsVisible = document.getElementById('tab-perception')?.classList.contains('active');
         if (!overviewIsVisible || document.hidden) { animationFrameId = null; return; }
-        syncRadarWithVideo();
+        try { syncRadarWithVideo(); } catch(e) { console.warn('BEV tick error:', e); }
         animationFrameId = requestAnimationFrame(tick);
       }
       animationFrameId = requestAnimationFrame(tick);
@@ -1605,7 +1681,8 @@
         if (now - lastIoTSyncAt >= 250 && frame.frame_index !== lastSyncedFrameIndex) {
           lastIoTSyncAt = now;
           lastSyncedFrameIndex = frame.frame_index;
-          liveFrameSafety = null;
+          // Drives the physical MQTT actuator only. The HUD is painted
+          // synchronously from the frame itself in updateLiveTargetsFromFrame().
           fetch('/api/iot/sync-observation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1615,14 +1692,7 @@
               source_mode: 'RECORDED_DEMO'
             })
           })
-            .then(res => res.ok ? res.json() : Promise.reject(new Error(`Safety sync failed (${res.status})`)))
-            .then(decision => {
-              // Ignore a delayed response for a frame the user has already
-              // scrubbed past. This prevents an old danger verdict flashing
-              // over a newer clear frame.
-              if (lastSyncedFrameIndex !== frame.frame_index) return;
-              liveFrameSafety = decision;
-            })
+            .then(res => { if (!res.ok) throw new Error(`Safety sync failed (${res.status})`); })
             .catch(err => console.debug('IoT frame sync error:', err));
         }
       }
@@ -1631,16 +1701,24 @@
     function findClosestFrame(timeSec) {
       if (!fullTelemetryData || !fullTelemetryData.frames || fullTelemetryData.frames.length === 0) return null;
       const frames = fullTelemetryData.frames;
-      if (timeSec <= frames[0].timestamp_sec) return frames[0];
-      if (timeSec >= frames[frames.length - 1].timestamp_sec) return frames[frames.length - 1];
 
-      let low = 0, high = frames.length - 1;
-      while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        if (frames[mid].timestamp_sec < timeSec) low = mid + 1;
-        else high = mid - 1;
-      }
-      return frames[Math.min(Math.max(0, low), frames.length - 1)];
+      // The annotated video holds exactly one encoded frame per telemetry
+      // record, in order, so map video time to a record POSITIONALLY.
+      // Matching timestamp_sec instead is wrong whenever the run used
+      // stride > 1: those timestamps are frame_idx / source_fps, so they span
+      // stride times longer than the encoded output (a stride-2 clip carries
+      // 7 s of timestamps in a 3.5 s video). Matching them then selects a
+      // record from the wrong part of the clip, which is what made the HUD
+      // badge disagree with the hazard burned into the frame on screen.
+      // The frame on screen during [k/fps, (k+1)/fps) is k, so this floors
+      // over the record count rather than rounding -- rounding would switch
+      // to the next record half a frame early.
+      const dur = mainVideoPlayer ? mainVideoPlayer.duration : NaN;
+      const idx = (isFinite(dur) && dur > 0)
+        ? Math.floor((timeSec / dur) * frames.length)
+        : Math.floor(timeSec * ((fullTelemetryData.meta && fullTelemetryData.meta.original_fps) || 30));
+
+      return frames[Math.min(frames.length - 1, Math.max(0, idx))];
     }
 
     function updateLiveTargetsFromFrame(frame) {
@@ -1828,10 +1906,10 @@
 
         // On the perception screen, updateLiveTargetsFromFrame() already paints
         // the HUD instantly from the currently displayed frame's own hazard
-        // data on every frame change. Repainting it here from this poller's
-        // (up to 2.5s stale) liveFrameSafety snapshot would re-introduce lag
-        // between the badge and the video it's describing. Other screens
-        // continue to show the latest verified physical actuator state.
+        // data on every frame change. Repainting it from this poller's
+        // (up to 2.5s stale) snapshot would re-introduce lag between the badge
+        // and the video it describes. Other screens continue to show the
+        // latest verified physical actuator state.
         const perceptionVisible = document.getElementById('tab-perception')?.classList.contains('active');
         if (perceptionVisible) {
           // no-op: frame-local sync owns the HUD while this tab is active.
@@ -2009,6 +2087,7 @@
     async function loadSamples() {
       try {
         const res = await fetch('/api/video/samples');
+        if (!res.ok) throw new Error(`samples HTTP ${res.status}`);
         const samples = await res.json();
         sampleSelect.innerHTML = '<option value="">-- Choose benchmark video --</option>';
         samples.forEach((s) => {
@@ -2025,6 +2104,7 @@
     async function loadExistingJobs(autoSelectLatest = false) {
       try {
         const res = await fetch('/api/video/jobs');
+        if (!res.ok) throw new Error(`jobs HTTP ${res.status}`);
         const jobs = await res.json();
         const completed = jobs.filter(j => j.status === 'COMPLETED');
 
@@ -2057,10 +2137,14 @@
       if (!jid) return;
       try {
         const res = await fetch(`/api/video/jobs/${jid}`);
-        const job = await res.json();
-        await onJobComplete(job);
+        // An error body would otherwise flow into onJobComplete as a job
+        // object, producing an "undefined" run with no telemetry.
+        if (!res.ok) throw new Error(`job lookup HTTP ${res.status}`);
+        await onJobComplete(await res.json());
       } catch (err) {
         console.error('Failed to select run:', err);
+        fullTelemetryData = null;
+        resetPerceptionReadouts();
       }
     });
 
@@ -2082,14 +2166,28 @@
       recentSelect.value = '';
       fullTelemetryData = null;
 
+      // A raw source has no telemetry to drive the readouts.
+      resetPerceptionReadouts();
+      jsonViewer.innerText = '';
+
       mainVideoPlayer.pause();
       mainVideoPlayer.removeAttribute('src');
       mainVideoPlayer.load();
+
+      // Hide the player until the new source's first frame actually decodes,
+      // so the previous video's last frame never lingers on screen.
+      mainVideoPlayer.style.display = 'none';
+      videoPlaceholder.style.display = 'block';
+      videoPlaceholder.innerText = 'Loading video...';
+
       mainVideoPlayer.src = `/api/video/samples/${encodeURIComponent(chosen)}/stream`;
-      videoPlaceholder.style.display = 'none';
-      mainVideoPlayer.style.display = 'block';
-      mainVideoPlayer.onloadedmetadata = () => {
+      mainVideoPlayer.onloadeddata = () => {
+        videoPlaceholder.style.display = 'none';
+        mainVideoPlayer.style.display = 'block';
         mainVideoPlayer.play().catch(e => console.log('Autoplay deferred:', e));
+      };
+      mainVideoPlayer.onerror = () => {
+        videoPlaceholder.innerText = `Cannot play "${chosen}" — browser needs H.264 MP4. Re-upload or convert to MP4 first.`;
       };
 
       videoMetaText.innerText = `${chosen} • raw source (not yet analyzed)`;

@@ -111,9 +111,16 @@ class TTCCalculator:
             else:
                 urgency = "SAFE"
 
+            # A near-zero velocity axis already inside its bound returns an
+            # infinite interval (see _get_1d_time_interval), which floats
+            # through to t_exit. json.dump writes that as literal `Infinity`,
+            # which is not valid JSON and FastAPI's allow_nan=False response
+            # serializer later rejects with a 500 when re-sending this frame.
+            exit_seconds = round(t_exit, 2) if math.isfinite(t_exit) else None
+
             return TTCResult(
                 ttc_seconds=round(actual_ttc, 2),
-                time_to_exit_seconds=round(t_exit, 2),
+                time_to_exit_seconds=exit_seconds,
                 is_conflict_predicted=True,
                 is_approaching=is_closing,
                 closing_speed_mps=round(closing_speed, 2),

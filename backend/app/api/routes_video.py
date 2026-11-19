@@ -4,6 +4,7 @@ import os
 import uuid
 import time
 import json
+import math
 import shutil
 import logging
 from pathlib import Path
@@ -20,8 +21,9 @@ from app.models.schemas import (
     ProcessVideoRequest,
     SampleVideo
 )
-from app.computer_vision.pipeline import VideoProcessingPipeline
+from app.computer_vision.pipeline import VideoProcessingPipeline, convert_to_web_h264
 from app.computer_vision.detector import YOLODetector
+from app.persistence.event_store import get_event_store
 
 # NumPy 2.x backward compatibility safeguard
 import numpy as np
@@ -130,6 +132,22 @@ def run_pipeline_task(
         JOBS[job_id]["telemetry_url"] = f"/api/video/jobs/{job_id}/telemetry"
         JOBS[job_id]["total_unique_tracks"] = summary["total_unique_tracks"]
 
+        try:
+            get_event_store().record(
+                event_type="VIDEO_ANALYSIS_COMPLETED",
+                source="pipeline",
+                payload={
+                    "job_id": job_id,
+                    "filename": JOBS[job_id]["filename"],
+                    "total_frames": JOBS[job_id]["total_frames"],
+                    "total_unique_tracks": summary["total_unique_tracks"],
+                    "avg_fps": summary["avg_fps"],
+                    "avg_latency_ms": summary["avg_latency_ms"],
+                },
+            )
+        except Exception as exc:
+            logger.warning("Flight recorder could not store VIDEO_ANALYSIS_COMPLETED: %s", exc)
+
     except Exception as e:
         logger.exception(f"Error processing video job {job_id}: {e}")
         if job_id in JOBS:
@@ -175,18 +193,32 @@ async def upload_video(file: UploadFile = File(...)):
             detail=f"Unsupported video format: {ext}. Allowed: {allowed_exts}"
         )
 
-    file_id = f"upload_{uuid.uuid4().hex[:8]}{ext}"
-    dest_path = settings.UPLOAD_DIR / file_id
+    stem = Path(file.filename).stem[:40]
+    # Always store as .mp4 — we transcode to H.264 below so the browser can play it
+    file_id = f"{stem}.mp4"
+    dest_path = settings.SAMPLES_DIR / file_id
+    if dest_path.exists():
+        file_id = f"{stem}_{uuid.uuid4().hex[:6]}.mp4"
+        dest_path = settings.SAMPLES_DIR / file_id
 
-    with open(dest_path, "wb") as buffer:
+    # Write the raw upload to a temp path, then transcode to web-compatible H.264
+    raw_path = str(dest_path) + ".raw" + ext
+    with open(raw_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
+    try:
+        convert_to_web_h264(raw_path, str(dest_path))
+    except Exception as e:
+        # raw_path is cleaned up by convert_to_web_h264 on success; remove on failure
+        if os.path.exists(raw_path):
+            os.remove(raw_path)
+        raise HTTPException(status_code=422, detail=f"Video transcode failed: {e}")
 
     return {
         "status": "UPLOADED",
         "filename": file_id,
         "original_name": file.filename,
         "size_bytes": dest_path.stat().st_size,
-        "download_url": f"/api/video/uploads/{file_id}"
     }
 
 
@@ -313,4 +345,18 @@ def get_job_telemetry(job_id: str):
         raise HTTPException(status_code=404, detail="Telemetry JSON is not ready or missing")
     with open(telemetry_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return JSONResponse(content=data)
+    return JSONResponse(content=_sanitize_non_finite(data))
+
+
+def _sanitize_non_finite(obj):
+    """Replaces inf/-inf/nan with None. json.load happily parses the literal
+    Infinity/NaN tokens Python's json.dump writes (non-standard JSON), but
+    Starlette's JSONResponse serializes with allow_nan=False and raises on
+    them, turning an old telemetry file into a 500 on every future read."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_non_finite(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_non_finite(v) for v in obj]
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return None
+    return obj
